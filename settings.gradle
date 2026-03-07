@@ -1,0 +1,9 @@
+rootProject.name = 'plant-care-msa'
+
+
+include 'auth-service'
+include 'plant-service'
+include 'sensor-service'
+include 'ai-service'
+include 'discovery-service'
+include 'gateway-service'
