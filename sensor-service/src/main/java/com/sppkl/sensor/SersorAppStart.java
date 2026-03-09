@@ -1,11 +1,11 @@
-package com.sppkl.auth;
+package com.sppkl.sensor;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AppStart {
+public class SersorAppStart {
     public static void main(String[] args) {
-        SpringApplication.run(AppStart.class);
+        SpringApplication.run(SersorAppStart.class);
     }
 }
