@@ -14,10 +14,10 @@ public class AIDiagnosisController {
     @GetMapping("/Ai")
     public List<AIDiagnosisDto> User_AIList(@RequestParam int userId){
         return aiDiagnosisService.User_AIList(userId);
-    }   //GET /diagnosis?userId=1        → 유저의 진단목록 전체
+    }   //GET /http://localhost:8084/Ai?userId=1       → 유저의 진단목록 전체
 
     @GetMapping("/diagnosis/{diagnosisId}")
     public AIDiagnosisDto User_Details(@PathVariable Long diagnosisId){
         return aiDiagnosisService.User_Details(diagnosisId);
-    }   // GET /diagnosis/5               → 진단 상세조회
+    }   // GET /http://localhost:8084/diagnosis/5             → 진단 상세조회
 }
