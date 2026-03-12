@@ -1,8 +1,14 @@
 package com.sppkl.ai.controller;
 
+import com.netflix.discovery.converters.Auto;
 import com.sppkl.ai.dto.AIDiagnosisDto;
+import com.sppkl.ai.entity.AIDiagnosisEntity;
+import com.sppkl.ai.entity.SensorDataEntitiy;
+import com.sppkl.ai.repository.AIDiagnosisRepository;
+import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +21,8 @@ import java.util.List;
 public class AIDiagnosisController {
     @Autowired private AIDiagnosisService aiDiagnosisService;
     @Autowired private GeminiService geminiService;
+    @Autowired private SensorDataRepository sensorDataRepository;
+    @Autowired private AIDiagnosisRepository aiDiagnosisRepository;
 
     @GetMapping("/Ai")
     public List<AIDiagnosisDto> User_AIList(@RequestParam int userId){
@@ -34,7 +42,14 @@ public class AIDiagnosisController {
         byte[] imageBytes = image.getBytes();
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
         String mimeType = image.getContentType();
-        String diagnosisResult = geminiService.diagnose(base64Image, mimeType);
+
+        AIDiagnosisEntity diagnosis=aiDiagnosisRepository.findById(diagnosisId)
+                .orElseThrow(()->new EntityNotFoundException("진단 없음"+diagnosisId));
+        Integer plantId=diagnosis.getPlant().getPlantId();  //
+        SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
+                .orElseThrow(()->new EntityNotFoundException("센서 데이터 없음"+plantId));
+
+        String diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
         // 이미지를 byte[]로 변환후 제미나이한테 String타입으로 줌
         return aiDiagnosisService.update(diagnosisId, diagnosisResult);
     }   // POST  /http://localhost:8084/diagnosis/2

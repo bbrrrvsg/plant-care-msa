@@ -1,5 +1,6 @@
 package com.sppkl.ai.service;
 
+import com.sppkl.ai.dto.SensorDataDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -14,20 +15,24 @@ public class GeminiService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public String diagnose(String base64Image, String mimeType) {
+    public String diagnose(String base64Image, String mimeType, SensorDataDto sensorDataDto) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(
                         Map.of("parts", List.of(
                                 Map.of("inline_data", Map.of(
-                                        "mime_type", mimeType,  // "image/jpeg" 고정 → 동적으로
+                                        "mime_type", mimeType,
                                         "data", base64Image
                                 )),
-                                Map.of("text", "이 식물의 상태를 진단하고 관리 방법을 알려줘.")
+                                Map.of("text", String.format(
+                                        "센서 데이터:\n- 토양 수분: %.1f%%\n- 온도: %.1f°C\n- 조도: %.1f lux\n- 습도: %.1f%%\n\n" +
+                                                "위 센서 데이터와 이미지를 참고해서 이 식물의 상태를 진단하고 관리 방법을 알려줘.",
+                                        sensorDataDto.getSoilMoisture(), sensorDataDto.getTemperature(), sensorDataDto.getIlluminance(), sensorDataDto.getHumidity()
+                                ))
                         ))
                 )
-        );
+        );  // 호출 : diagnose(base64Image, mimeType, sensorDataDto);
 
         try {
             Map response = restTemplate.postForObject(url, body, Map.class);

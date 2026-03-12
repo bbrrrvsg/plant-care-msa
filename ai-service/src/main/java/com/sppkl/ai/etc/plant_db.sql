@@ -36,14 +36,15 @@ CREATE TABLE MyPlant (
 
 -- 4. SensorData 테이블 (센서 데이터)
 CREATE TABLE SensorData (
-    sensor_data_id  BIGINT          NOT NULL AUTO_INCREMENT,
-    plant_id        INT             NOT NULL,
-    temperature     DECIMAL(5,2),
-    humidity        DECIMAL(5,2),
-    soil_moisture   DECIMAL(5,2),
-    measured_time   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (sensor_data_id),
-    FOREIGN KEY (plant_id) REFERENCES MyPlant(plant_id) ON DELETE CASCADE
+                            sensor_data_id  BIGINT          NOT NULL AUTO_INCREMENT,
+                            plant_id        INT             NOT NULL,
+                            temperature     DECIMAL(5,2),
+                            humidity        DECIMAL(5,2),
+                            soil_moisture   DECIMAL(5,2),
+                            illuminance     DECIMAL(5,2),
+                            measured_time   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            PRIMARY KEY (sensor_data_id),
+                            FOREIGN KEY (plant_id) REFERENCES MyPlant(plant_id) ON DELETE CASCADE
 );
 
 -- 5. AIDiagnosis 테이블 (AI 진단)
@@ -82,3 +83,9 @@ CREATE TABLE Notification (
     PRIMARY KEY (notification_id),
     FOREIGN KEY (plant_id) REFERENCES MyPlant(plant_id) ON DELETE CASCADE
 );
+
+INSERT INTO USER (email, password, login_type) VALUES ('test@test.com', '1234', 'local');
+INSERT INTO PlantBook (plant_name, care_method, characteristics) VALUES ('몬스테라', '주 1회 물주기', '넓은 잎');
+INSERT INTO MyPlant (user_id, species_code, nickname, adoption_date) VALUES (1, 1, '몬순이', '2026-01-01');
+INSERT INTO sensor_data (plant_id, temperature, humidity, soil_moisture, illuminance, measured_time)
+VALUES (1, 23.5, 65.0, 45.0, 990.0, NOW());

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity @Table(name = "ai_Diagnosis") @Data
-@AllArgsConstructor @NoArgsConstructor@Builder
+@AllArgsConstructor @NoArgsConstructor @Builder
 public class AIDiagnosisEntity extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
