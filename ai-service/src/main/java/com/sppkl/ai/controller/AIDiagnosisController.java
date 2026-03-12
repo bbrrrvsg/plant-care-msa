@@ -20,4 +20,9 @@ public class AIDiagnosisController {
     public AIDiagnosisDto User_Details(@PathVariable Long diagnosisId){
         return aiDiagnosisService.User_Details(diagnosisId);
     }   // GET /http://localhost:8084/diagnosis/5             → 진단 상세조회
+
+    @DeleteMapping("/diagnosis")
+    public boolean delete(@RequestParam Long diagnosisId){
+        return aiDiagnosisService.delete(diagnosisId);
+    }   // DELETE /http://localhost:8084/diagnosis?diagnosisId=1    -> 진단기록 삭제
 }

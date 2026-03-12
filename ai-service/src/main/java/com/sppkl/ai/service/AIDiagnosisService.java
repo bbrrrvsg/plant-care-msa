@@ -4,11 +4,13 @@ import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.repository.AIDiagnosisRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AIDiagnosisService {
@@ -50,5 +52,29 @@ public class AIDiagnosisService {
     public AIDiagnosisDto save(AIDiagnosisEntity entity) {
         AIDiagnosisEntity saved = aiDiagnosisRepository.save(entity);
         return saved.toDto();
+    }
+
+    @Transactional
+    public boolean update(AIDiagnosisDto aiDiagnosisDto){
+        Long updatePk=aiDiagnosisDto.getDiagnosisId();
+        if(!aiDiagnosisRepository.existsById(aiDiagnosisDto.getDiagnosisId())){
+            System.out.println("진단 아이디가 존재하지 않습니다.");
+            return false;
+        }else{  // 수정할 아이디가 존재
+            AIDiagnosisEntity update=aiDiagnosisRepository.findById(aiDiagnosisDto.getDiagnosisId())
+                    .orElseThrow();
+            update.setDetails(aiDiagnosisDto.getDetails());    // 진단 내용 수정
+            update.setDiagnosisDate(aiDiagnosisDto.getUpdateDate());
+            return true;
+        }
+    }// 아이디 존재하지않으면 실패
+
+    // 진단결과 삭제 아이디가 존재하면 성공
+    public boolean delete(Long diagnosisId) {
+        if (!aiDiagnosisRepository.existsById(diagnosisId)) {
+            return false;
+        }
+        aiDiagnosisRepository.deleteById(diagnosisId);
+        return true;
     }
 }
