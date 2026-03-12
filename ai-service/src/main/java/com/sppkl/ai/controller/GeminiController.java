@@ -27,7 +27,8 @@ public class GeminiController {
 
         byte[] imageBytes = image.getBytes();
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        String diagnosisResult = geminiService.diagnose(base64Image);
+        String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
+        String diagnosisResult = geminiService.diagnose(base64Image, mimeType);
 
         MyPlantEntitiy plant = myPlantRepository.findById(plantId)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found: " + plantId));

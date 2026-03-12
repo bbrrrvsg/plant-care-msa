@@ -14,14 +14,14 @@ public class GeminiService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public String diagnose(String base64Image) {
+    public String diagnose(String base64Image, String mimeType) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(
                         Map.of("parts", List.of(
                                 Map.of("inline_data", Map.of(
-                                        "mime_type", "image/jpeg",
+                                        "mime_type", mimeType,  // "image/jpeg" 고정 → 동적으로
                                         "data", base64Image
                                 )),
                                 Map.of("text", "이 식물의 상태를 진단하고 관리 방법을 알려줘.")

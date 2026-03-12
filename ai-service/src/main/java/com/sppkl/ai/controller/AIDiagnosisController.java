@@ -33,7 +33,8 @@ public class AIDiagnosisController {
                     // 진단 번호와 이미지를 다시 입력받음
         byte[] imageBytes = image.getBytes();
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        String diagnosisResult = geminiService.diagnose(base64Image);
+        String mimeType = image.getContentType();
+        String diagnosisResult = geminiService.diagnose(base64Image, mimeType);
         // 이미지를 byte[]로 변환후 제미나이한테 String타입으로 줌
         return aiDiagnosisService.update(diagnosisId, diagnosisResult);
     }   // POST  /http://localhost:8084/diagnosis/2
