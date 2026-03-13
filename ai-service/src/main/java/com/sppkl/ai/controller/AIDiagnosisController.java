@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 public class AIDiagnosisController {
@@ -24,10 +25,18 @@ public class AIDiagnosisController {
     @Autowired private SensorDataRepository sensorDataRepository;
     @Autowired private AIDiagnosisRepository aiDiagnosisRepository;
 
+
     @GetMapping("/Ai")
-    public List<AIDiagnosisDto> User_AIList(@RequestParam int userId){
-        return aiDiagnosisService.User_AIList(userId);
-    }   //GET /http://localhost:8084/Ai?userId=1       → 유저의 진단목록 전체
+    public List<Map<String, Object>> User_AIList(@RequestParam int userId) {
+        return aiDiagnosisService.User_AIList(userId).stream()
+                .map(dto -> new java.util.HashMap<String, Object>() {{
+                    put("diagnosisId", dto.getDiagnosisId());
+                    put("title", dto.getTitle());
+                    put("diagnosisDate", dto.getDiagnosisDate());
+                }})
+                .collect(java.util.stream.Collectors.toList());
+    }
+    //GET /http://localhost:8084/Ai?userId=1       → 유저의 진단목록 전체
 
     @GetMapping("/diagnosis/{diagnosisId}")
     public AIDiagnosisDto User_Details(@PathVariable Long diagnosisId){
