@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Map;
 
 @RestController
 public class GeminiController {
@@ -33,14 +34,15 @@ public class GeminiController {
         String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
         SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
                 .orElseThrow(()->new EntityNotFoundException("센서 데이터가 없음"+plantId));
-        String diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
+        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
 
         MyPlantEntitiy plant = myPlantRepository.findById(plantId)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found: " + plantId));
 
         AIDiagnosisEntity entity = AIDiagnosisEntity.builder()
                 .plant(plant)
-                .details(diagnosisResult)
+                .title(diagnosisResult.get("title"))
+                .details(diagnosisResult.get("content"))
                 .result("진단완료")
                 .diagnosisDate(LocalDateTime.now())
                 .build();

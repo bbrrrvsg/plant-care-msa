@@ -21,6 +21,8 @@ public class AIDiagnosisEntity extends BaseTime {
     @JoinColumn(name = "plant_id", nullable = false)
     private MyPlantEntitiy plant;
 
+    private String title;
+
     @Column(name = "details", columnDefinition = "TEXT")
     private String details;
 
@@ -37,6 +39,7 @@ public class AIDiagnosisEntity extends BaseTime {
         return AIDiagnosisDto.builder()
                 .diagnosisId(diagnosisId)
                 .plantId(plant.getPlantId())
+                .title(title)
                 .details(details)
                 .result(result)
                 .imageUrl(imageUrl)

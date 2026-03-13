@@ -1,6 +1,5 @@
 package com.sppkl.ai.controller;
 
-import com.netflix.discovery.converters.Auto;
 import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.SensorDataEntitiy;
@@ -16,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class AIDiagnosisController {
@@ -49,7 +49,7 @@ public class AIDiagnosisController {
         SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
                 .orElseThrow(()->new EntityNotFoundException("센서 데이터 없음"+plantId));
 
-        String diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
+        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
         // 이미지를 byte[]로 변환후 제미나이한테 String타입으로 줌
         return aiDiagnosisService.update(diagnosisId, diagnosisResult);
     }   // POST  /http://localhost:8084/diagnosis/2

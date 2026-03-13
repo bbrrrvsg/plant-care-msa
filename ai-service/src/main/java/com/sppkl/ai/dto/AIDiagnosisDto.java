@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class AIDiagnosisDto {
     private Long diagnosisId;
     private Integer plantId;
+    private String title;
     private String details;
     private String result;
     private String imageUrl;
@@ -25,6 +26,7 @@ public class AIDiagnosisDto {
     public AIDiagnosisEntity toEntity(MyPlantEntitiy plant) {
         return AIDiagnosisEntity.builder()
                 .plant(plant)
+                .title(title)
                 .details(this.details)
                 .result(this.result)
                 .imageUrl(this.imageUrl)

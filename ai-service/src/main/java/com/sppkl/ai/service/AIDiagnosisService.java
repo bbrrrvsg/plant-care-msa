@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AIDiagnosisService {
@@ -55,10 +56,11 @@ public class AIDiagnosisService {
 
     // 다시 진단 진행
     @Transactional
-    public AIDiagnosisDto update(Long diagnosisId, String newDiagnosisResult) {
+    public AIDiagnosisDto update(Long diagnosisId, Map<String,String> newDiagnosisResult) {
         AIDiagnosisEntity entity = aiDiagnosisRepository.findById(diagnosisId)
                 .orElseThrow(() -> new EntityNotFoundException("Diagnosis not found: " + diagnosisId));
-        entity.setDetails(newDiagnosisResult);
+        entity.setTitle(newDiagnosisResult.get("title"));
+        entity.setDetails(newDiagnosisResult.get("content"));
         entity.setResult("진단완료");
         return entity.toDto();
     }
