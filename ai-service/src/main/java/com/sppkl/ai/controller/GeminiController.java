@@ -32,6 +32,7 @@ public class GeminiController {
         byte[] imageBytes = image.getBytes();
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
         String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
+
         SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
                 .orElseThrow(()->new EntityNotFoundException("센서 데이터가 없음"+plantId));
         Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
@@ -43,7 +44,8 @@ public class GeminiController {
                 .plant(plant)
                 .title(diagnosisResult.get("title"))
                 .details(diagnosisResult.get("content"))
-                .result("진단완료")
+                .result(("식물아님".equals(diagnosisResult.get("title")) ||
+                        "진단실패".equals(diagnosisResult.get("title"))) ? "진단실패" : "진단완료")
                 .diagnosisDate(LocalDateTime.now())
                 .build();
 

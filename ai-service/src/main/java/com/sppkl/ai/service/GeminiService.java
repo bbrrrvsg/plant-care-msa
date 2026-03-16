@@ -12,7 +12,6 @@ public class GeminiService {
 
     @Value("${gemini.api.key}")
     private String apiKey;
-
     private final RestTemplate restTemplate = new RestTemplate();
 
     public Map<String,String> diagnose(String base64Image, String mimeType, SensorDataDto sensorDataDto) {
@@ -27,9 +26,12 @@ public class GeminiService {
                                 )),
                                 Map.of("text", String.format(
                                         "센서 데이터:\n- 토양 수분: %.1f%%\n- 온도: %.1f°C\n- 조도: %.1f lux\n- 습도: %.1f%%\n\n" +
-                                                "위 센서 데이터와 이미지를 참고해서 이 식물의 상태를 진단하고 관리 방법을 알려줘."+
+                                                "위 센서 데이터와 이미지를 참고해서 이 식물의 상태를 진단하고 관리 방법을 알려줘.\n" +
+                                                "단, 센서 데이터와 이미지가 불일치하더라도 이미지를 우선으로 진단해줘.\n" +
+                                                "식물이 죽었거나 상태가 나쁜 경우도 진단 제목에 상태를 담아 진단완료로 처리해줘.\n" +
+                                                "식물 사진이 아닌 경우에만 제목을 '식물아님'으로 답해줘.\n" +
                                                 "응답은 반드시 아래 형식으로 해줘:\n" +
-                                                "제목: (진단 결과를 10자 이내로 요약)\n" +
+                                                "제목: {알맞은 진단 제목 (식물이 맞고 진단 성공) 또는 식물아님 (식물 사진이 아닌 경우) 또는 진단실패 (진단할 수 없는 경우)}\n" +
                                                 "내용: (상세 진단 내용)",
                                         sensorDataDto.getSoilMoisture(), sensorDataDto.getTemperature(), sensorDataDto.getIlluminance(), sensorDataDto.getHumidity()
                                 ))
@@ -72,9 +74,9 @@ public class GeminiService {
                 String diagContent = contentBuilder.toString().trim();
                 if (diagContent.isEmpty()) diagContent = fullResponse;
 
-                return Map.of("title", title, "content", diagContent);
+                return Map.of("title", title, "content", diagContent, "result","진단 완료");
             }
-            return Map.of("title", "식물 진단", "content", "진단 결과를 가져오지 못했습니다.");
+            return Map.of("title", "식물 진단 실패", "content", "진단 결과를 가져오지 못했습니다.", "result","진단 실패");
         } catch (Exception e) {
             return Map.of("title", "오류", "content", "AI 진단 중 오류가 발생했습니다: " + e.getMessage());
         }

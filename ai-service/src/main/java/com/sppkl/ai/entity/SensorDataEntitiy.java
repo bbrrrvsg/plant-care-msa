@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity @Table(name = "sensor_data")
 @Data @AllArgsConstructor @NoArgsConstructor @Builder
-public class SensorDataEntitiy extends BaseTime {
+public class SensorDataEntitiy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "sensor_data_id")
@@ -45,8 +45,6 @@ public class SensorDataEntitiy extends BaseTime {
                 .humidity(humidity)
                 .soilMoisture(soilMoisture)
                 .measuredTime(measuredTime != null ? measuredTime.toString() : null)
-                .createDate(getCreateDate() != null ? getCreateDate().toString() : null)
-                .updateDate(getUpdateDate() != null ? getUpdateDate().toString() : null)
                 .build();
     }
 }
