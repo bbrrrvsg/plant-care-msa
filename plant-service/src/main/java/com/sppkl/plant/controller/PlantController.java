@@ -19,6 +19,7 @@ public class PlantController {
     //식물 검색
     @GetMapping("/search")
     public ApiResponse serachPlant(@RequestParam String plantName) {
+        System.out.println("PlantController.serachPlant");
         return ApiResponse.success(plantService.searchPlant(plantName));
     }
 }
