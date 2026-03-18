@@ -32,7 +32,15 @@ public class GrowthLogController {
         return ResponseEntity.ok(growthLogService.create(dto));
     }
     // POST /growth-log
-    // Body: { "plantId": 1, "title": "오늘의 일지", "content": "잘 자라고 있어요", "logDate": "2026-03-17" }
+    /* Body:
+    {
+      "plantId": 1,
+      "diagnosisId": 1,
+      "title": "오늘의 일지",
+      "content": "잘 자라고 있어요",
+      "logDate": "2026-03-17"
+    }
+    */
 
     // 수정
     @PutMapping("/{logId}")
