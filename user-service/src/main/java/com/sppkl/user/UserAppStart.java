@@ -1,11 +1,13 @@
-package com.sppkl.sensor;
+package com.sppkl.user;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
-public class AppStart {
+@EnableJpaAuditing
+public class UserAppStart {
     public static void main(String[] args) {
-        SpringApplication.run(AppStart.class);
+        SpringApplication.run(UserAppStart.class);
     }
 }
