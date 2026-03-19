@@ -50,4 +50,12 @@ public class GrowthLogEntity extends BaseTime {
                 .updateDate(getUpdateDate() != null ? getUpdateDate().toString() : null)
                 .build();
     }
+
+    public GrowthLogDto toListDto(){    // 일지 목록 작성 전용 toDto
+        return GrowthLogDto.builder()
+                .logId(logId)
+                .title(title)
+                .logDate(logDate)
+                .build();
+    }
 }

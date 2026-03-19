@@ -23,17 +23,20 @@ public class GrowthLogService {
     public List<GrowthLogDto> getPlantLogList(int plantId){
         return growthLogRepository.findByPlant_PlantIdOrderByLogDateDesc(plantId)
                 .stream()
-                .map(GrowthLogEntity::toDto)
+                .map(GrowthLogEntity::toListDto)
                 .collect(Collectors.toList());
     }
 
     // 일지 상세
-    public GrowthLogDto getLog(Long logId) {
-        return toDto(findById(logId));
+    public GrowthLogDto getDetailLog(Long logId) {
+        return growthLogRepository.findById(logId)
+                .orElseThrow(
+                        ()->new EntityNotFoundException("일지 없음(목록 출력부분)"+logId)
+                ).toDto();
     }
 
     // 일지 작성
-    public GrowthLogDto create(GrowthLogDto growthLogDto){
+    public GrowthLogDto logWrite(GrowthLogDto growthLogDto){
         MyPlantEntitiy plant=new MyPlantEntitiy();
         plant.setPlantId(growthLogDto.getPlantId());
         AIDiagnosisEntity aiDiagnosis = null;
@@ -44,16 +47,25 @@ public class GrowthLogService {
         return growthLogRepository.save(growthLogDto.toEntity(plant,aiDiagnosis)).toDto();
     }
 
+    private AIDiagnosisEntity diagnosisRef(Long diagnosisId) {
+        AIDiagnosisEntity d = new AIDiagnosisEntity();
+        d.setDiagnosisId(diagnosisId);
+        return d;
+    }
+
     // 일지 수정
     @Transactional
     public GrowthLogDto update(Long logId, GrowthLogDto dto) {
-        GrowthLogEntity entity = findById(logId);
-        entity.setTitle(dto.getTitle());
-        entity.setContent(dto.getContent());
-        entity.setPhotoUrl(dto.getPhotoUrl());
-        entity.setLogDate(dto.getLogDate() != null ? dto.getLogDate() : entity.getLogDate());
-        entity.setAiDiagnosis(dto.getDiagnosisId() != null ? diagnosisRef(dto.getDiagnosisId()) : null);
-        return toDto(entity);
+        GrowthLogEntity entity = growthLogRepository.findById(logId)
+                .orElseThrow(
+                        ()->new EntityNotFoundException("일지 없음(업데이트)"+logId)
+                ); // 수정할 일지
+        entity.setTitle(dto.getTitle());        // 일지 제목
+        entity.setContent(dto.getContent());    // 수정할 식물 관찰 내용
+        entity.setPhotoUrl(dto.getPhotoUrl());  // 수정할 식물 이미지 저장
+        entity.setLogDate(dto.getLogDate() != null ? dto.getLogDate() : entity.getLogDate());   // 수정한 날짜 저장
+        entity.setAiDiagnosis(dto.getDiagnosisId() != null ?diagnosisRef(dto.getDiagnosisId()):null);    // 새롭게 진단한 내역 가져오기
+        return entity.toDto();
     }
 
     // 일지 삭제
@@ -61,31 +73,5 @@ public class GrowthLogService {
         if (!growthLogRepository.existsById(logId)) return false;
         growthLogRepository.deleteById(logId);
         return true;
-    }
-
-    // ---- 내부 헬퍼 ----
-    private GrowthLogEntity findById(Long logId) {
-        return growthLogRepository.findById(logId)
-                .orElseThrow(() -> new EntityNotFoundException("일지 없음: " + logId));
-    }
-
-    private AIDiagnosisEntity diagnosisRef(Long diagnosisId) {
-        AIDiagnosisEntity d = new AIDiagnosisEntity();
-        d.setDiagnosisId(diagnosisId);
-        return d;
-    }
-
-    private GrowthLogDto toDto(GrowthLogEntity e) {
-        return GrowthLogDto.builder()
-                .logId(e.getLogId())
-                .plantId(e.getPlant().getPlantId())
-                .diagnosisId(e.getAiDiagnosis() != null ? e.getAiDiagnosis().getDiagnosisId() : null)
-                .title(e.getTitle())
-                .photoUrl(e.getPhotoUrl())
-                .logDate(e.getLogDate())
-                .content(e.getContent())
-                .createDate(e.getCreateDate() != null ? e.getCreateDate().toString() : null)
-                .updateDate(e.getUpdateDate() != null ? e.getUpdateDate().toString() : null)
-                .build();
     }
 }

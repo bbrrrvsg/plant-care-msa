@@ -22,14 +22,14 @@ public class GrowthLogController {
 
     // 상세 조회
     @GetMapping("/{logId}")
-    public ResponseEntity<GrowthLogDto> getPlantDetailLog(@PathVariable Long logId){
-        return ResponseEntity.ok(growthLogService.getLog(logId));
+    public ResponseEntity<GrowthLogDto> getDetailLog(@PathVariable Long logId){
+        return ResponseEntity.ok(growthLogService.getDetailLog(logId));
     }// GET /growth-log/1
 
     // 작성
     @PostMapping
     public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogDto dto) {
-        return ResponseEntity.ok(growthLogService.create(dto));
+        return ResponseEntity.ok(growthLogService.logWrite(dto));
     }
     // POST /growth-log
     /* Body:
@@ -38,7 +38,6 @@ public class GrowthLogController {
       "diagnosisId": 1,
       "title": "오늘의 일지",
       "content": "잘 자라고 있어요",
-      "logDate": "2026-03-17"
     }
     */
 
