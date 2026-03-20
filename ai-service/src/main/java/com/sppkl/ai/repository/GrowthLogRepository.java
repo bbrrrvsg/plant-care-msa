@@ -10,4 +10,4 @@ import java.util.List;
 public interface GrowthLogRepository
         extends JpaRepository<GrowthLogEntity,Long> {
     List<GrowthLogEntity> findByPlant_PlantIdOrderByLogDateDesc(Integer plantId);
-}
+}// 일지 목록 최신순

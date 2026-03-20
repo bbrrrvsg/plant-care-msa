@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,9 @@ public class GrowthLogService {
         if (growthLogDto.getDiagnosisId() != null) {
             aiDiagnosis = new AIDiagnosisEntity();
             aiDiagnosis.setDiagnosisId(growthLogDto.getDiagnosisId());
+        }
+        if(growthLogDto.getLogDate()==null){
+            growthLogDto.setLogDate(LocalDateTime.now().toLocalDate());
         }
         return growthLogRepository.save(growthLogDto.toEntity(plant,aiDiagnosis)).toDto();
     }
