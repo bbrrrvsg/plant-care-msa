@@ -2,12 +2,14 @@ package com.sppkl.plant.controller;
 
 
 import com.sppkl.common.dto.ApiResponse;
+import com.sppkl.plant.dto.PlantRequestDto;
+import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.service.PlantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/plant")
@@ -15,11 +17,37 @@ public class PlantController {
     @Autowired
     private PlantService plantService;
 
-
-    //식물 검색
-    @GetMapping("/search")
-    public ApiResponse serachPlant(@RequestParam String plantName) {
-        System.out.println("PlantController.serachPlant");
-        return ApiResponse.success(plantService.searchPlant(plantName));
+    // 내 식물 전체 조회
+    @GetMapping
+    public ResponseEntity<List<PlantResponseDto>> getMyPlants(@RequestParam String userId) {
+        return ResponseEntity.ok(plantService.getMyPlants(userId));
     }
+
+    // 내 식물 단건 조회
+    @GetMapping("/{myPlantId}")
+    public ResponseEntity<PlantResponseDto> getMyPlant(@PathVariable Integer myPlantId) {
+        return ResponseEntity.ok(plantService.getMyPlant(myPlantId));
+    }
+
+    // 내 식물 등록
+    @PostMapping
+    public ResponseEntity<PlantResponseDto> addMyPlant(@RequestBody PlantRequestDto dto) {
+        return ResponseEntity.ok(plantService.addMyPlant(dto));
+    }
+
+    // 내 식물 수정
+    @PutMapping("/{myPlantId}")
+    public ResponseEntity<PlantResponseDto> updateMyPlant(
+            @PathVariable Integer myPlantId,
+            @RequestBody PlantRequestDto dto) {
+        return ResponseEntity.ok(plantService.updateMyPlant(myPlantId, dto));
+    }
+
+    // 내 식물 삭제
+    @DeleteMapping("/{myPlantId}")
+    public ResponseEntity<Void> deleteMyPlant(@PathVariable Integer myPlantId) {
+        plantService.deleteMyPlant(myPlantId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
