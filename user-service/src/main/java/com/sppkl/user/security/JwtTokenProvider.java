@@ -26,7 +26,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // 토큰에서 userId 꺼내기
     public String getUserId(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
