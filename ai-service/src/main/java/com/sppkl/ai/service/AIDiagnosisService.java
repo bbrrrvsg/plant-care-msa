@@ -56,11 +56,12 @@ public class AIDiagnosisService {
 
     // 다시 진단 진행
     @Transactional
-    public AIDiagnosisDto update(Long diagnosisId, Map<String,String> newDiagnosisResult) {
+    public AIDiagnosisDto update(Long diagnosisId, Map<String,String> newDiagnosisResult,String imageUrl) {
         AIDiagnosisEntity entity = aiDiagnosisRepository.findById(diagnosisId)
                 .orElseThrow(() -> new EntityNotFoundException("Diagnosis not found: " + diagnosisId));
         entity.setTitle(newDiagnosisResult.get("title"));
         entity.setDetails(newDiagnosisResult.get("content"));
+        entity.setImageUrl(imageUrl);
         entity.setResult("진단완료");
         return entity.toDto();
     }

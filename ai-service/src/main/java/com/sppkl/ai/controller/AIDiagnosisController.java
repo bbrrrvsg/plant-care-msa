@@ -7,6 +7,7 @@ import com.sppkl.ai.repository.AIDiagnosisRepository;
 import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
+import com.sppkl.ai.service.ImageService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class AIDiagnosisController {
     @Autowired private GeminiService geminiService;
     @Autowired private SensorDataRepository sensorDataRepository;
     @Autowired private AIDiagnosisRepository aiDiagnosisRepository;
-
+    @Autowired private ImageService imageService;
 
     @GetMapping("/Ai")
     public List<Map<String, Object>> User_AIList(@RequestParam int userId) {
@@ -47,19 +48,19 @@ public class AIDiagnosisController {
             @PathVariable Long diagnosisId,
             @RequestParam("image") MultipartFile image) throws IOException {
                     // 진단 번호와 이미지를 다시 입력받음
-        byte[] imageBytes = image.getBytes();
-        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        String mimeType = image.getContentType();
+        String imageUrl= imageService.save(image);  // 이미지 저장
+        String base64=imageService.toBase64(image); // url 저장
+        String mimeType = image.getContentType();   // 이미지 타입 가져오기
 
         AIDiagnosisEntity diagnosis=aiDiagnosisRepository.findById(diagnosisId)
                 .orElseThrow(()->new EntityNotFoundException("진단 없음"+diagnosisId));
         Integer plantId=diagnosis.getPlant().getPlantId();  //
         SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
-                .orElseThrow(()->new EntityNotFoundException("센서 데이터 없음"+plantId));
+                .orElseThrow(()->new EntityNotFoundException("식물 없음"+plantId));
 
-        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());
+        Map<String,String> diagnosisResult = geminiService.diagnose(base64, mimeType,sensorData.toDto());
         // 이미지를 byte[]로 변환후 제미나이한테 String타입으로 줌
-        return aiDiagnosisService.update(diagnosisId, diagnosisResult);
+        return aiDiagnosisService.update(diagnosisId, diagnosisResult,imageUrl);
     }   // POST  /http://localhost:8084/diagnosis/2
             // multipart/form-data로 image,diagnosisId로 입력받아 요청  -> 다시 진단
 
