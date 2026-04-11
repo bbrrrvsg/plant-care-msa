@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@RestController
+@RestController @RequestMapping("/ai")
 public class GeminiController {
     @Autowired GeminiService geminiService;
     @Autowired private AIDiagnosisService aiDiagnosisService;
@@ -25,7 +25,7 @@ public class GeminiController {
     @Autowired private SensorDataRepository sensorDataRepository;
     @Autowired private ImageService imageService;
 
-    @PostMapping("/diagnosis/ai")
+    @PostMapping("/gemini")
     public AIDiagnosisDto diagnosePlant(
             @RequestParam("image") MultipartFile image,
             @RequestParam("plantId") Integer plantId) throws IOException {
@@ -52,6 +52,10 @@ public class GeminiController {
                 .imageUrl(imageUrl)
                 .diagnosisDate(LocalDateTime.now())
                 .build();
+        System.out.println("=== AI 진단 요청 도착 ===");
+        System.out.println("plantId: " + plantId);
+        System.out.println("image 파일명: " + image.getOriginalFilename());
+        System.out.println("image 크기: " + image.getSize());
 
         return aiDiagnosisService.save(entity);
     }

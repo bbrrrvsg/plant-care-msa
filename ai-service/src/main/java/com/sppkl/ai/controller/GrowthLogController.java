@@ -1,5 +1,6 @@
 package com.sppkl.ai.controller;
 
+import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.dto.GrowthLogDto;
 import com.sppkl.ai.service.GrowthLogService;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +29,17 @@ public class GrowthLogController {
 
     // 작성
     @PostMapping
-    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogDto dto) {
-        return ResponseEntity.ok(growthLogService.logWrite(dto));
+    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogDto dto, @RequestBody AIDiagnosisDto aiDiagnosisDto) {
+        return ResponseEntity.ok(growthLogService.logWrite(dto,aiDiagnosisDto));
     }
     // POST /growth-log
     /* Body:
-    {
-      "plantId": 1,
-      "diagnosisId": 1,
-      "title": "오늘의 일지",
-      "content": "잘 자라고 있어요",
-    }
+{
+  "plantId": 1,
+  "diagnosisId": 1,
+  "title": "오늘의 일지",
+  "content": "잘 자라고 있어요"
+}
     */
 
     // 수정

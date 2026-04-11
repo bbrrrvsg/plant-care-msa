@@ -1,5 +1,6 @@
 package com.sppkl.ai.service;
 
+import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.dto.GrowthLogDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.GrowthLogEntity;
@@ -17,7 +18,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class GrowthLogService {
-
     private final GrowthLogRepository growthLogRepository;
 
     // 일지 목록 (특정 식물)
@@ -37,7 +37,7 @@ public class GrowthLogService {
     }
 
     // 일지 작성
-    public GrowthLogDto logWrite(GrowthLogDto growthLogDto){
+    public GrowthLogDto logWrite(GrowthLogDto growthLogDto, AIDiagnosisDto aiDiagnosisDto){
         MyPlantEntitiy plant=new MyPlantEntitiy();
         plant.setPlantId(growthLogDto.getPlantId());
         AIDiagnosisEntity aiDiagnosis = null;
@@ -48,6 +48,7 @@ public class GrowthLogService {
         if(growthLogDto.getLogDate()==null){
             growthLogDto.setLogDate(LocalDateTime.now().toLocalDate());
         }
+        String pothoUrl=aiDiagnosisDto.getImageUrl()!=null?aiDiagnosisDto.getImageUrl():"저장된 이미지가 없습니다.";
         return growthLogRepository.save(growthLogDto.toEntity(plant,aiDiagnosis)).toDto();
     }
 
@@ -71,6 +72,15 @@ public class GrowthLogService {
         entity.setAiDiagnosis(dto.getDiagnosisId() != null ?diagnosisRef(dto.getDiagnosisId()):null);    // 새롭게 진단한 내역 가져오기
         return entity.toDto();
     }
+    /*
+{
+  "plantId": 1,
+  "diagnosisId": 1,
+  "title": "오늘의 일지test",
+  "content": "잘 자라고 있어요"
+}
+*/
+
 
     // 일지 삭제
     public boolean delete(Long logId) {
