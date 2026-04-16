@@ -25,8 +25,8 @@ public class GrowthLogService {
     private final AIDiagnosisRepository aiDiagnosisRepository;
 
     // 일지 목록 (특정 식물)
-    public List<GrowthLogDto> getPlantLogList(int plantId){
-        return growthLogRepository.findByPlant_PlantIdOrderByLogDateDesc(plantId)
+    public List<GrowthLogDto> getPlantLogList(int userId){
+        return growthLogRepository.findByPlant_User_UserIdOrderByLogDateDesc(userId)
                 .stream()
                 .map(GrowthLogEntity::toListDto)
                 .collect(Collectors.toList());

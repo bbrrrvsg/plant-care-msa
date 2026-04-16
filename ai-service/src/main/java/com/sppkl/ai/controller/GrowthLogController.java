@@ -18,9 +18,9 @@ public class GrowthLogController {
 
     // 식물 번호로 조회한 목록
     @GetMapping
-    public ResponseEntity<List<GrowthLogDto>> getList(@RequestParam int plantId) {
-        return ResponseEntity.ok(growthLogService.getPlantLogList(plantId));
-    }// GET /growth-log?plantId=1
+    public ResponseEntity<List<GrowthLogDto>> getList(@RequestParam int userId) {
+        return ResponseEntity.ok(growthLogService.getPlantLogList(userId));
+    }// GET /growth-log?userId=1
 
     // 상세 조회
     @GetMapping("/{logId}")

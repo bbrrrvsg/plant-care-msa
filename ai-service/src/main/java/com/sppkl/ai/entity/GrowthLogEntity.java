@@ -37,6 +37,8 @@ public class GrowthLogEntity extends BaseTime {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
+
+
     public GrowthLogDto toDto() {
         return GrowthLogDto.builder()
                 .logId(logId)
