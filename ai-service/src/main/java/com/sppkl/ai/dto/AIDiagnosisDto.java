@@ -16,6 +16,7 @@ public class AIDiagnosisDto {
     private Long diagnosisId;
     private Integer plantId;
     private String title;
+    private String subtitle;
     private String details;
     private String result;
     private String imageUrl;

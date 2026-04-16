@@ -46,17 +46,13 @@ public class GeminiController {
         AIDiagnosisEntity entity = AIDiagnosisEntity.builder()
                 .plant(plant)
                 .title(diagnosisResult.get("title"))
+                .subtitle(diagnosisResult.get("subtitle"))
                 .details(diagnosisResult.get("content"))
                 .result(("식물아님".equals(diagnosisResult.get("title")) ||
                         "진단실패".equals(diagnosisResult.get("title"))) ? "진단실패" : "진단완료")
                 .imageUrl(imageUrl)
                 .diagnosisDate(LocalDateTime.now())
                 .build();
-        System.out.println("=== AI 진단 요청 도착 ===");
-        System.out.println("plantId: " + plantId);
-        System.out.println("image 파일명: " + image.getOriginalFilename());
-        System.out.println("image 크기: " + image.getSize());
-
         return aiDiagnosisService.save(entity);
     }
 }

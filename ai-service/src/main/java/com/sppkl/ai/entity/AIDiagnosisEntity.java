@@ -22,6 +22,7 @@ public class AIDiagnosisEntity extends BaseTime {
     private MyPlantEntitiy plant;
 
     private String title;
+    private String subtitle;
 
     @Column(name = "details", columnDefinition = "TEXT")
     private String details;
@@ -40,6 +41,7 @@ public class AIDiagnosisEntity extends BaseTime {
                 .diagnosisId(diagnosisId)
                 .plantId(plant.getPlantId())
                 .title(title)
+                .subtitle(subtitle)
                 .details(details)
                 .result(result)
                 .imageUrl(imageUrl)

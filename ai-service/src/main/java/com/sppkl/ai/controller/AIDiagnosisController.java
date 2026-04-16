@@ -18,7 +18,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-@RestController
+@RestController @RequestMapping("/diagnosis")
 public class AIDiagnosisController {
     @Autowired private AIDiagnosisService aiDiagnosisService;
     @Autowired private GeminiService geminiService;
@@ -32,18 +32,19 @@ public class AIDiagnosisController {
                 .map(dto -> new java.util.HashMap<String, Object>() {{
                     put("diagnosisId", dto.getDiagnosisId());
                     put("title", dto.getTitle());
+                    put("subtite",dto.getSubtitle());
                     put("diagnosisDate", dto.getDiagnosisDate());
                 }})
                 .collect(java.util.stream.Collectors.toList());
     }
-    //GET /http://localhost:8084/Ai?userId=1       → 유저의 진단목록 전체
+    //GET http://localhost:8084/diagnosis/Ai?userId=1       → 유저의 진단목록 전체
 
-    @GetMapping("/diagnosis/{diagnosisId}")
+    @GetMapping("/{diagnosisId}")
     public AIDiagnosisDto User_Details(@PathVariable Long diagnosisId){
         return aiDiagnosisService.User_Details(diagnosisId);
     }   // GET /http://localhost:8084/diagnosis/5             → 진단 상세조회
 
-    @PutMapping("/diagnosis/{diagnosisId}")
+    @PutMapping("/{diagnosisId}")
     public AIDiagnosisDto reDiagnose(
             @PathVariable Long diagnosisId,
             @RequestParam("image") MultipartFile image) throws IOException {
@@ -64,7 +65,7 @@ public class AIDiagnosisController {
     }   // POST  /http://localhost:8084/diagnosis/2
             // multipart/form-data로 image,diagnosisId로 입력받아 요청  -> 다시 진단
 
-    @DeleteMapping("/diagnosis")
+    @DeleteMapping("/delete")
     public boolean delete(@RequestParam Long diagnosisId){
         return aiDiagnosisService.delete(diagnosisId);
     }   // DELETE /http://localhost:8084/diagnosis?diagnosisId=1    -> 진단기록 삭제
