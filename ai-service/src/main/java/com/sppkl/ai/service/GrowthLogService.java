@@ -52,7 +52,6 @@ public class GrowthLogService {
         if(growthLogRequestDto.getGrowthLogDto().getLogDate()==null){
             growthLogRequestDto.getGrowthLogDto().setLogDate(LocalDateTime.now().toLocalDate());
         }
-        String pothoUrl=growthLogRequestDto.getAiDiagnosisDto().getImageUrl()!=null?growthLogRequestDto.getAiDiagnosisDto().getImageUrl():"저장된 이미지가 없습니다.";
         return growthLogRepository.save(growthLogRequestDto.getGrowthLogDto().toEntity(plant,aiDiagnosis)).toDto();
     }
 
