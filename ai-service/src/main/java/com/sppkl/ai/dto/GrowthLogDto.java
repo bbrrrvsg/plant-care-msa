@@ -28,7 +28,7 @@ public class GrowthLogDto { // 관찰일지
                 .plant(plant)   // 관찰할 식물
                 .aiDiagnosis(diagnosis!=null?diagnosis:null) // 진단내용 가져올거야??
                 .title(title)           // 일지 제목
-                .photoUrl(photoUrl!=null?photoUrl:null)     // 이거 진단한 식물 이미지 가져오도록 설계
+                .photoUrl(diagnosis.getImageUrl()!=null? diagnosis.getImageUrl():null)     // 진단한 식물 이미지 가져오도록 설계
                 .logDate(logDate!=null?logDate:null)    // 일지 작성한 시간
                 .content(content)           // 일지 내용
                 .build();

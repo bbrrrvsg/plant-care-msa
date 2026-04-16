@@ -2,6 +2,7 @@ package com.sppkl.ai.controller;
 
 import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.dto.GrowthLogDto;
+import com.sppkl.ai.dto.GrowthLogRequestDto;
 import com.sppkl.ai.service.GrowthLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +29,9 @@ public class GrowthLogController {
     }// GET /growth-log/1
 
     // 작성
-    @PostMapping
-    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogDto dto, @RequestBody AIDiagnosisDto aiDiagnosisDto) {
-        return ResponseEntity.ok(growthLogService.logWrite(dto,aiDiagnosisDto));
+    @PostMapping("write")
+    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogRequestDto growthLogRequestDto) {
+        return ResponseEntity.ok(growthLogService.logWrite(growthLogRequestDto));
     }
     // POST /growth-log
     /* Body:
