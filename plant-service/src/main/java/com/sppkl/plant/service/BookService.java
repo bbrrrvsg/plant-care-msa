@@ -1,8 +1,9 @@
 package com.sppkl.plant.service;
 
 import com.sppkl.plant.Entity.BookEntity;
+import com.sppkl.plant.dto.BookDto;
 import com.sppkl.plant.repository.BookRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -11,18 +12,19 @@ import org.xml.sax.InputSource;
 
 import javax.xml.parsers.*;
 import java.io.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
+// 농사로 공공 API에서 식물 도감 데이터를 가져와 DB에 저장하는 서비스
 @Service
+@RequiredArgsConstructor
 public class BookService {
 
-    // 0. 객체 주입
-    @Autowired
-    private BookRepository bookRepository;
-    // 1. 키값 가져오기
+    private final BookRepository bookRepository;
+
     @Value("${nongsaro.api.key}")
     private String NONGSARO_KEY;
 
-    // 2.
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void fetchAndSave() {
@@ -89,7 +91,30 @@ public class BookService {
         System.out.println("전체 저장 완료!");
     }
 
-    //XML에서 태그값 꺼내는 헬퍼 메소드
+    // 도감 전체 조회
+    public List<BookDto> getAllBooks() {
+        return bookRepository.findAll()
+                .stream()
+                .map(BookEntity::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // 도감 단건 조회
+    public BookDto getBook(Integer speciesCode) {
+        BookEntity book = bookRepository.findById(speciesCode)
+                .orElseThrow(() -> new RuntimeException("식물 정보를 찾을 수 없습니다."));
+        return book.toDto();
+    }
+
+    // 식물 이름으로 검색 (부분 일치)
+    public List<BookDto> searchBooks(String name) {
+        return bookRepository.findByPlantNameContaining(name)
+                .stream()
+                .map(BookEntity::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // XML에서 태그값 꺼내는 헬퍼 메소드
     private String getTag(Element item, String tagName) {
         NodeList list = item.getElementsByTagName(tagName);
         if (list.getLength() > 0) return list.item(0).getTextContent();

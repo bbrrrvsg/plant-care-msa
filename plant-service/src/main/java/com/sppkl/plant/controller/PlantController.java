@@ -1,11 +1,10 @@
 package com.sppkl.plant.controller;
 
 
-import com.sppkl.common.dto.ApiResponse;
 import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.service.PlantService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +12,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/plant")
+@RequiredArgsConstructor
 public class PlantController {
-    @Autowired
-    private PlantService plantService;
+
+    private final PlantService plantService;
 
     // 내 식물 전체 조회
     @GetMapping
