@@ -1,6 +1,5 @@
 package com.sppkl.ai.entity;
 
-import com.sppkl.ai.dto.PlantBookDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,15 +26,4 @@ public class PlantBookEntity extends BaseTime {
 
     @Column(name = "characteristics", length = 255)
     private String characteristics;
-
-    public PlantBookDto toDto() {
-        return PlantBookDto.builder()
-                .speciesCode(species_code)
-                .plantName(plantName)
-                .careMethod(careMethod)
-                .characteristics(characteristics)
-                .createDate(getCreateDate() != null ? getCreateDate().toString() : null)
-                .updateDate(getUpdateDate() != null ? getUpdateDate().toString() : null)
-                .build();
-    }
 }
