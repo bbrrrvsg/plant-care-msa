@@ -2,13 +2,16 @@ package com.sppkl.plant.service;
 
 import com.sppkl.plant.Entity.PlantEntity;
 import com.sppkl.plant.client.SensorClient;
+import com.sppkl.plant.client.AiServiceClient;
 import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.repository.BookRepository;
+import com.sppkl.common.dto.AIDiagnosisDto;
 import com.sppkl.plant.repository.PlantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,11 @@ public class PlantService {
     private final PlantRepository plantRepository;
     private final BookRepository bookRepository;
     private final SensorClient sensorClient;
+
+    private final AiServiceClient aiServiceClient;
+    public AIDiagnosisDto diagnosePlant(Integer myPlantId, MultipartFile image) {
+        return aiServiceClient.diagnosePlant(image, myPlantId);
+    }
 
     // 내 식물 전체 조회
     public List<PlantResponseDto> getMyPlants(String userId) {

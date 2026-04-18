@@ -7,6 +7,9 @@ import com.sppkl.plant.service.PlantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import com.sppkl.common.dto.AIDiagnosisDto;
 
 import java.util.List;
 
@@ -16,6 +19,13 @@ import java.util.List;
 public class PlantController {
 
     private final PlantService plantService;
+
+    @PostMapping("/{myPlantId}/diagnosis")
+    public ResponseEntity<AIDiagnosisDto> diagnosePlant(
+            @PathVariable Integer myPlantId,
+            @RequestParam("image") MultipartFile image) throws IOException {
+        return ResponseEntity.ok(plantService.diagnosePlant(myPlantId, image));
+    }
 
     // 내 식물 전체 조회
     @GetMapping

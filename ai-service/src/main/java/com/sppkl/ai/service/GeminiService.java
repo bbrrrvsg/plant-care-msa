@@ -1,18 +1,22 @@
 package com.sppkl.ai.service;
 
 import com.sppkl.ai.dto.SensorDataDto;
+import com.sppkl.ai.client.PlantServiceClient;
+import com.sppkl.common.dto.BookDto;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service @RequiredArgsConstructor
 public class GeminiService {
 
     @Value("${gemini.api.key}")
     private String apiKey;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final PlantServiceClient plantServiceClient;
 
     public Map<String,String> diagnose(String base64Image, String mimeType, SensorDataDto sensorDataDto) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
@@ -61,11 +65,22 @@ public class GeminiService {
                         .findFirst()
                         .map(l -> l.replace("제목:", "").trim())
                         .orElse("제목 필터링 실패");
+                if (title.equals("식물아님") || title.equals("진단실패")) {
+                    return Map.of("title", title, "result", "진단 실패");
+                }
+
+                Integer speciesCode=null;
+
+                // AI진단결과로 나온 식물이름이 있는지 검색
+                List<BookDto> matched = plantServiceClient.searchBooks(title);
+                if(!matched.isEmpty()){  // 같은 이름 매핑
+                    speciesCode = matched.get(0).getSpeciesCode();
+                }
 
                 String subtitle=fullResponse.lines()
-                        .filter(l-> l.startsWith("소제목"))
+                        .filter(l-> l.startsWith("소제목:"))
                         .findFirst()
-                        .map(l->l.replace("소제목", "").trim())
+                        .map(l->l.replace("소제목:", "").trim())
                         .orElse("소제목 필터링 실패");
 
                 // 내용 파싱
@@ -84,7 +99,8 @@ public class GeminiService {
                 String diagContent = contentBuilder.toString().trim();
                 if (diagContent.isEmpty()) diagContent = fullResponse;
 
-                return Map.of("title", title, "subtitle",subtitle, "content", diagContent, "result","진단 완료");
+                return Map.of("title", title, "subtitle",subtitle, "content", diagContent,
+                        "result","진단 완료","speciesCode",speciesCode!=null ? speciesCode.toString() : "");
             }
             return Map.of("title", "식물 진단 실패", "content", "진단 결과를 가져오지 못했습니다.", "result","진단 실패");
         } catch (Exception e) {
