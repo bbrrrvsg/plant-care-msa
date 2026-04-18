@@ -1,20 +1,42 @@
 package com.sppkl.plant.controller;
 
-import com.netflix.discovery.converters.Auto;
+import com.sppkl.plant.dto.BookDto;
 import com.sppkl.plant.service.BookService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
+@RequestMapping("/book")
+@RequiredArgsConstructor
 public class BookController {
 
-    @Autowired
-    private BookService bookService;
+    private final BookService bookService;
 
-    @PostMapping("/book/fetch")
-    public String fetchAndSave() {
+    // 농사로 API에서 식물 도감 데이터 가져와 DB 저장 (최초 1회)
+    @PostMapping("/fetch")
+    public ResponseEntity<String> fetchAndSave() {
         bookService.fetchAndSave();
-        return "저장완료";
+        return ResponseEntity.ok("저장완료");
+    }
+
+    // 도감 전체 조회
+    @GetMapping
+    public ResponseEntity<List<BookDto>> getAllBooks() {
+        return ResponseEntity.ok(bookService.getAllBooks());
+    }
+
+    // 도감 단건 조회
+    @GetMapping("/{speciesCode}")
+    public ResponseEntity<BookDto> getBook(@PathVariable Integer speciesCode) {
+        return ResponseEntity.ok(bookService.getBook(speciesCode));
+    }
+
+    // 식물 이름으로 검색
+    @GetMapping("/search")
+    public ResponseEntity<List<BookDto>> searchBooks(@RequestParam String name) {
+        return ResponseEntity.ok(bookService.searchBooks(name));
     }
 }
