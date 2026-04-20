@@ -1,6 +1,6 @@
 package com.sppkl.ai.entity;
 
-import com.sppkl.ai.dto.GrowthLogDto;
+import com.sppkl.common.dto.GrowthLogDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

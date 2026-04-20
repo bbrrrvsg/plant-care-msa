@@ -1,8 +1,8 @@
 package com.sppkl.ai.service;
 
 import com.sppkl.ai.client.PlantServiceClient;
-import com.sppkl.ai.dto.GrowthLogDto;
-import com.sppkl.ai.dto.GrowthLogRequestDto;
+import com.sppkl.common.dto.GrowthLogDto;
+import com.sppkl.common.dto.GrowthLogRequestDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.GrowthLogEntity;
 import com.sppkl.ai.repository.AIDiagnosisRepository;
@@ -51,7 +51,16 @@ public class GrowthLogService {
         if(growthLogRequestDto.getGrowthLogDto().getLogDate()==null){
             growthLogRequestDto.getGrowthLogDto().setLogDate(LocalDateTime.now().toLocalDate());
         }
-        return growthLogRepository.save(growthLogRequestDto.getGrowthLogDto().toEntity(plantId,aiDiagnosis)).toDto();
+        GrowthLogEntity entity = GrowthLogEntity.builder()
+                .plantId(plantId)
+                .aiDiagnosis(aiDiagnosis)
+                .title(growthLogRequestDto.getGrowthLogDto().getTitle())
+                .photoUrl(aiDiagnosis != null ? aiDiagnosis.getImageUrl() : null)
+                .logDate(growthLogRequestDto.getGrowthLogDto().getLogDate())
+                .content(growthLogRequestDto.getGrowthLogDto().getContent())
+                .build();
+
+        return growthLogRepository.save(entity).toDto();
     }
 
     private AIDiagnosisEntity diagnosisRef(Long diagnosisId) {

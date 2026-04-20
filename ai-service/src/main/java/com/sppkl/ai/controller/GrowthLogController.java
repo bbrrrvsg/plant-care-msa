@@ -1,7 +1,7 @@
 package com.sppkl.ai.controller;
 
-import com.sppkl.ai.dto.GrowthLogDto;
-import com.sppkl.ai.dto.GrowthLogRequestDto;
+import com.sppkl.common.dto.GrowthLogRequestDto;
+import com.sppkl.common.dto.GrowthLogDto;
 import com.sppkl.ai.service.GrowthLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
