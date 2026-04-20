@@ -3,6 +3,7 @@ package com.sppkl.ai.controller;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.SensorDataEntitiy;
 import com.sppkl.common.dto.AIDiagnosisDto;
+import com.sppkl.common.dto.BookDto;
 import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController @RequestMapping("/ai")
@@ -48,5 +50,13 @@ public class GeminiController {
                 .diagnosisDate(LocalDateTime.now())
                 .build();
         return aiDiagnosisService.save(entity);
+    }
+
+    @PostMapping("/identify")
+    public List<BookDto> identifyPlant(
+            @RequestParam("image") MultipartFile image) throws IOException {
+        String base64Image = imageService.toBase64(image);
+        String mimeType = image.getContentType();
+        return geminiService.identifyPlant(base64Image, mimeType);
     }
 }
