@@ -18,9 +18,8 @@ public class SensorDataEntitiy {
     @Column(name = "sensor_data_id")
     private Long sensorDataId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plant_id", nullable = false)
-    private MyPlantEntitiy plant;
+    @Column(name = "plant_id", nullable = false)  // ← @ManyToOne 제거
+    private Integer plantId;
 
     @Column(name = "temperature", precision = 5, scale = 2)
     private BigDecimal temperature;
@@ -40,7 +39,7 @@ public class SensorDataEntitiy {
     public SensorDataDto toDto() {
         return SensorDataDto.builder()
                 .sensorDataId(sensorDataId)
-                .plantId(plant.getPlantId())
+                .plantId(plantId)
                 .temperature(temperature)
                 .humidity(humidity)
                 .soilMoisture(soilMoisture)

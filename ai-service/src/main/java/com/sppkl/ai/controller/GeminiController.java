@@ -1,10 +1,8 @@
 package com.sppkl.ai.controller;
 
-import com.sppkl.ai.dto.AIDiagnosisDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
-import com.sppkl.ai.entity.MyPlantEntitiy;
 import com.sppkl.ai.entity.SensorDataEntitiy;
-import com.sppkl.ai.repository.MyPlantRepository;
+import com.sppkl.common.dto.AIDiagnosisDto;
 import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
@@ -21,7 +19,6 @@ import java.util.Map;
 public class GeminiController {
     @Autowired GeminiService geminiService;
     @Autowired private AIDiagnosisService aiDiagnosisService;
-    @Autowired private MyPlantRepository myPlantRepository;
     @Autowired private SensorDataRepository sensorDataRepository;
     @Autowired private ImageService imageService;
 
@@ -34,17 +31,14 @@ public class GeminiController {
         String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
 
         SensorDataEntitiy sensorData=sensorDataRepository
-                .findTopByPlant_PlantIdOrderByMeasuredTimeDesc(plantId)
+                .findTopByPlantIdOrderByMeasuredTimeDesc(plantId)
                 .orElseThrow(()->new EntityNotFoundException("센서 데이터가 없음"+plantId));
         // 식물의 센서데이터를 가져와 내림차순
 
         Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());  // 진단결과
 
-        MyPlantEntitiy plant = myPlantRepository.findById(plantId)
-                .orElseThrow(() -> new EntityNotFoundException("Plant not found: " + plantId));
-
         AIDiagnosisEntity entity = AIDiagnosisEntity.builder()
-                .plant(plant)
+                .plantId(plantId)
                 .title(diagnosisResult.get("title"))
                 .subtitle(diagnosisResult.get("subtitle"))
                 .details(diagnosisResult.get("content"))

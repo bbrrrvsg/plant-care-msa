@@ -30,6 +30,13 @@ public class PlantService {
         return aiServiceClient.diagnosePlant(image, myPlantId);
     }
 
+    public List<Integer> getPlantIdsByUserId(String userId) {
+        return plantRepository.findByUserId(userId)
+                .stream()
+                .map(PlantEntity::getMyPlantId)
+                .collect(Collectors.toList());
+    }
+
     // 내 식물 전체 조회
     public List<PlantResponseDto> getMyPlants(String userId) {
         return plantRepository.findByUserId(userId)

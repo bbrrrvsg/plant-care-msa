@@ -27,6 +27,11 @@ public class PlantController {
         return ResponseEntity.ok(plantService.diagnosePlant(myPlantId, image));
     }
 
+    @GetMapping("/ids")
+    public ResponseEntity<List<Integer>> getPlantIdsByUserId(@RequestParam String userId) {
+        return ResponseEntity.ok(plantService.getPlantIdsByUserId(userId));
+    }
+
     // 내 식물 전체 조회
     @GetMapping
     public ResponseEntity<List<PlantResponseDto>> getMyPlants(@RequestParam String userId) {

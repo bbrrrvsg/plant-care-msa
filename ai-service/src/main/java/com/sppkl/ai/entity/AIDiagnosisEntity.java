@@ -1,13 +1,12 @@
 package com.sppkl.ai.entity;
 
-import com.sppkl.ai.dto.AIDiagnosisDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
+import com.sppkl.common.dto.AIDiagnosisDto;
 
 @Entity @Table(name = "ai_Diagnosis") @Data
 @AllArgsConstructor @NoArgsConstructor @Builder
@@ -17,9 +16,8 @@ public class AIDiagnosisEntity extends BaseTime {
     @Column(name = "diagnosis_id")
     private Long diagnosisId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plant_id", nullable = false)
-    private MyPlantEntitiy plant;
+    @Column(name = "plant_id", nullable = false)  // ← @ManyToOne 제거, plantId만 저장
+    private Integer plantId;
 
     private String title;
     private String subtitle;
@@ -39,7 +37,7 @@ public class AIDiagnosisEntity extends BaseTime {
     public AIDiagnosisDto toDto() {
         return AIDiagnosisDto.builder()
                 .diagnosisId(diagnosisId)
-                .plantId(plant.getPlantId())
+                .plantId(plantId)
                 .title(title)
                 .subtitle(subtitle)
                 .details(details)

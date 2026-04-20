@@ -17,9 +17,8 @@ public class GrowthLogEntity extends BaseTime {
     @Column(name = "log_id")
     private Long logId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plant_id", nullable = false)
-    private MyPlantEntitiy plant;
+    @Column(name = "plant_id", nullable = false)
+    private Integer plantId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "diagnosis_id")
@@ -42,7 +41,7 @@ public class GrowthLogEntity extends BaseTime {
     public GrowthLogDto toDto() {
         return GrowthLogDto.builder()
                 .logId(logId)
-                .plantId(plant.getPlantId())
+                .plantId(plantId)
                 .diagnosisId(aiDiagnosis != null ? aiDiagnosis.getDiagnosisId() : null)
                 .title(title)
                 .photoUrl(photoUrl)

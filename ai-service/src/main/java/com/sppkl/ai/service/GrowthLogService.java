@@ -1,13 +1,12 @@
 package com.sppkl.ai.service;
 
+import com.sppkl.ai.client.PlantServiceClient;
 import com.sppkl.ai.dto.GrowthLogDto;
 import com.sppkl.ai.dto.GrowthLogRequestDto;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.GrowthLogEntity;
-import com.sppkl.ai.entity.MyPlantEntitiy;
 import com.sppkl.ai.repository.AIDiagnosisRepository;
 import com.sppkl.ai.repository.GrowthLogRepository;
-import com.sppkl.ai.repository.MyPlantRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +20,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GrowthLogService {
     private final GrowthLogRepository growthLogRepository;
-    private final MyPlantRepository myPlantRepository;
+    private final PlantServiceClient plantServiceClient;
     private final AIDiagnosisRepository aiDiagnosisRepository;
 
     // 일지 목록 (특정 식물)
     public List<GrowthLogDto> getPlantLogList(int userId){
-        return growthLogRepository.findByPlant_User_UserIdOrderByLogDateDesc(userId)
+        List<Integer> plantIds = plantServiceClient.getPlantIdsByUserId(String.valueOf(userId));
+        return growthLogRepository.findByPlantIdInOrderByLogDateDesc(plantIds)
                 .stream()
                 .map(GrowthLogEntity::toListDto)
                 .collect(Collectors.toList());
@@ -42,8 +42,7 @@ public class GrowthLogService {
 
     // 일지 작성
     public GrowthLogDto logWrite(GrowthLogRequestDto growthLogRequestDto){
-        MyPlantEntitiy plant=myPlantRepository.findById(growthLogRequestDto.getGrowthLogDto().getPlantId())
-                .orElseThrow(()-> new RuntimeException("식물을 찾을 수 없습니다"));
+        Integer plantId=growthLogRequestDto.getGrowthLogDto().getPlantId();
         AIDiagnosisEntity aiDiagnosis = null;
         if (growthLogRequestDto.getAiDiagnosisDto().getDiagnosisId() != null) {
             aiDiagnosis = aiDiagnosisRepository.findById(growthLogRequestDto.getAiDiagnosisDto().getDiagnosisId())
@@ -52,7 +51,7 @@ public class GrowthLogService {
         if(growthLogRequestDto.getGrowthLogDto().getLogDate()==null){
             growthLogRequestDto.getGrowthLogDto().setLogDate(LocalDateTime.now().toLocalDate());
         }
-        return growthLogRepository.save(growthLogRequestDto.getGrowthLogDto().toEntity(plant,aiDiagnosis)).toDto();
+        return growthLogRepository.save(growthLogRequestDto.getGrowthLogDto().toEntity(plantId,aiDiagnosis)).toDto();
     }
 
     private AIDiagnosisEntity diagnosisRef(Long diagnosisId) {

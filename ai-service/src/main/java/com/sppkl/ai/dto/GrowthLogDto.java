@@ -2,14 +2,12 @@ package com.sppkl.ai.dto;
 
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.ai.entity.GrowthLogEntity;
-import com.sppkl.ai.entity.MyPlantEntitiy;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data@AllArgsConstructor@NoArgsConstructor@Builder
 public class GrowthLogDto { // 관찰일지
@@ -23,9 +21,9 @@ public class GrowthLogDto { // 관찰일지
     private String createDate;
     private String updateDate;
 
-    public GrowthLogEntity toEntity(MyPlantEntitiy plant, AIDiagnosisEntity diagnosis){ // 일지 작성 내용
+    public GrowthLogEntity toEntity(Integer plantId,AIDiagnosisEntity diagnosis){ // 일지 작성 내용
         return GrowthLogEntity.builder()
-                .plant(plant)   // 관찰할 식물
+                .plantId(plantId)   // 관찰할 식물
                 .aiDiagnosis(diagnosis!=null?diagnosis:null) // 진단내용 가져올거야??
                 .title(title)           // 일지 제목
                 .photoUrl(diagnosis.getImageUrl()!=null? diagnosis.getImageUrl():null)     // 진단한 식물 이미지 가져오도록 설계

@@ -11,4 +11,7 @@ public interface PlantServiceClient {
 
     @GetMapping("/book/search")
     List<BookDto> searchBooks(@RequestParam String name);
+
+    @GetMapping("/plant/ids")
+    List<Integer> getPlantIdsByUserId(@RequestParam String userId);
 }
