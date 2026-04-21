@@ -131,9 +131,6 @@ public class GeminiService {
                 .map(l -> l.replaceAll("식물\\d:", "").trim())
                 .collect(Collectors.toList());
 
-        System.out.println("=== Gemini 후보 목록 ===");
-        System.out.println(plantName);
-
         List<BookDto> result = new ArrayList<>();
         for (String name : plantName) {
             String koreanName = name.split("\\(")[0].trim();
