@@ -18,4 +18,5 @@ public class GrowthLogDto { // 관찰일지
     private String content;     // 일지 내용
     private String createDate;
     private String updateDate;
+    private AIDiagnosisDto diagnosisDto;
 }

@@ -1,6 +1,6 @@
-package com.sppkl.ai.repository;
+package com.sppkl.plant.repository;
 
-import com.sppkl.ai.entity.GrowthLogEntity;
+import com.sppkl.plant.Entity.GrowthLogEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
