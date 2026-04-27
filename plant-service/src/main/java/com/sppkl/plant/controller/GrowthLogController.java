@@ -1,8 +1,8 @@
-package com.sppkl.ai.controller;
+package com.sppkl.plant.controller;
 
 import com.sppkl.common.dto.GrowthLogRequestDto;
 import com.sppkl.common.dto.GrowthLogDto;
-import com.sppkl.ai.service.GrowthLogService;
+import com.sppkl.plant.service.GrowthLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +12,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/growth-log")
 public class GrowthLogController {
-
     private final GrowthLogService growthLogService;
 
     // 식물 번호로 조회한 목록
@@ -23,9 +22,11 @@ public class GrowthLogController {
 
     // 상세 조회
     @GetMapping("/{logId}")
-    public ResponseEntity<GrowthLogDto> getDetailLog(@PathVariable Long logId){
-        return ResponseEntity.ok(growthLogService.getDetailLog(logId));
-    }// GET /growth-log/1
+    public ResponseEntity<GrowthLogDto> getDetailLog(
+            @PathVariable Long logId,
+            @RequestParam(defaultValue = "false") boolean includeDiagnosis) {
+        return ResponseEntity.ok(growthLogService.getDetailLog(logId, includeDiagnosis));
+    }
 
     // 작성
     @PostMapping("write")

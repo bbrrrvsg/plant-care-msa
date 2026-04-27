@@ -1,5 +1,6 @@
-package com.sppkl.ai.entity;
+package com.sppkl.plant.Entity;
 
+import com.sppkl.plant.Entity.BaseTime;
 import com.sppkl.common.dto.GrowthLogDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,9 +21,8 @@ public class GrowthLogEntity extends BaseTime {
     @Column(name = "plant_id", nullable = false)
     private Integer plantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "diagnosis_id")
-    private AIDiagnosisEntity aiDiagnosis;
+    @Column(name = "diagnosis_id")
+    private Long diagnosisId;
 
     @Column(name = "title", length = 255)
     private String title;
@@ -42,13 +42,13 @@ public class GrowthLogEntity extends BaseTime {
         return GrowthLogDto.builder()
                 .logId(logId)
                 .plantId(plantId)
-                .diagnosisId(aiDiagnosis != null ? aiDiagnosis.getDiagnosisId() : null)
+                .diagnosisId(diagnosisId)
                 .title(title)
                 .photoUrl(photoUrl)
                 .logDate(logDate != null ? logDate : null)
                 .content(content)
-                .createDate(getCreateDate() != null ? getCreateDate().toString() : null)
-                .updateDate(getUpdateDate() != null ? getUpdateDate().toString() : null)
+                .createDate(getCreatedAt() != null ? getCreatedAt().toString() : null)
+                .updateDate(getUpdatedAt() != null ? getUpdatedAt().toString() : null)
                 .build();
     }
 

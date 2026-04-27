@@ -1,12 +1,13 @@
-package com.sppkl.ai.service;
+package com.sppkl.plant.service;
 
-import com.sppkl.ai.client.PlantServiceClient;
+import com.sppkl.common.dto.AIDiagnosisDto;
 import com.sppkl.common.dto.GrowthLogDto;
 import com.sppkl.common.dto.GrowthLogRequestDto;
-import com.sppkl.ai.entity.AIDiagnosisEntity;
-import com.sppkl.ai.entity.GrowthLogEntity;
-import com.sppkl.ai.repository.AIDiagnosisRepository;
-import com.sppkl.ai.repository.GrowthLogRepository;
+import com.sppkl.plant.Entity.GrowthLogEntity;
+import com.sppkl.plant.Entity.PlantEntity;
+import com.sppkl.plant.client.AiServiceClient;
+import com.sppkl.plant.repository.GrowthLogRepository;
+import com.sppkl.plant.repository.PlantRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +21,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GrowthLogService {
     private final GrowthLogRepository growthLogRepository;
-    private final PlantServiceClient plantServiceClient;
-    private final AIDiagnosisRepository aiDiagnosisRepository;
+    private final PlantRepository plantRepository;
+    private final AiServiceClient aiServiceClient;
 
     // 일지 목록 (특정 식물)
     public List<GrowthLogDto> getPlantLogList(int userId){
-        List<Integer> plantIds = plantServiceClient.getPlantIdsByUserId(String.valueOf(userId));
+        List<Integer> plantIds = plantRepository.findByUserId(String.valueOf(userId))
+                .stream()
+                .map(PlantEntity::getMyPlantId)
+                .collect(Collectors.toList());
+
         return growthLogRepository.findByPlantIdInOrderByLogDateDesc(plantIds)
                 .stream()
                 .map(GrowthLogEntity::toListDto)
@@ -33,40 +38,37 @@ public class GrowthLogService {
     }
 
     // 일지 상세
-    public GrowthLogDto getDetailLog(Long logId) {
-        return growthLogRepository.findById(logId)
-                .orElseThrow(
-                        ()->new EntityNotFoundException("일지 없음(목록 출력부분)"+logId)
-                ).toDto();
+    public GrowthLogDto getDetailLog(Long logId, boolean includeDiagnosis) {
+        GrowthLogDto dto = growthLogRepository.findById(logId)
+                .orElseThrow(() -> new EntityNotFoundException("일지 없음: " + logId))
+                .toDto();
+
+        if (includeDiagnosis && dto.getDiagnosisId() != null) {
+            AIDiagnosisDto diagnosis = aiServiceClient.getDiagnosisById(dto.getDiagnosisId());
+            dto.setDiagnosisDto(diagnosis);
+        }
+
+        return dto;
     }
 
     // 일지 작성
     public GrowthLogDto logWrite(GrowthLogRequestDto growthLogRequestDto){
-        Integer plantId=growthLogRequestDto.getGrowthLogDto().getPlantId();
-        AIDiagnosisEntity aiDiagnosis = null;
-        if (growthLogRequestDto.getAiDiagnosisDto().getDiagnosisId() != null) {
-            aiDiagnosis = aiDiagnosisRepository.findById(growthLogRequestDto.getAiDiagnosisDto().getDiagnosisId())
-                    .orElseThrow(()-> new RuntimeException("진단 정보를 찾아 올 수 없습니다"));
-        }
-        if(growthLogRequestDto.getGrowthLogDto().getLogDate()==null){
+        if (growthLogRequestDto.getGrowthLogDto().getLogDate() == null) {
             growthLogRequestDto.getGrowthLogDto().setLogDate(LocalDateTime.now().toLocalDate());
         }
+
         GrowthLogEntity entity = GrowthLogEntity.builder()
-                .plantId(plantId)
-                .aiDiagnosis(aiDiagnosis)
+                .plantId(growthLogRequestDto.getGrowthLogDto().getPlantId())
+                .diagnosisId(growthLogRequestDto.getAiDiagnosisDto() != null
+                        ? growthLogRequestDto.getAiDiagnosisDto().getDiagnosisId()
+                        : null)
                 .title(growthLogRequestDto.getGrowthLogDto().getTitle())
-                .photoUrl(aiDiagnosis != null ? aiDiagnosis.getImageUrl() : null)
+                .photoUrl(growthLogRequestDto.getGrowthLogDto().getPhotoUrl())
                 .logDate(growthLogRequestDto.getGrowthLogDto().getLogDate())
                 .content(growthLogRequestDto.getGrowthLogDto().getContent())
                 .build();
 
         return growthLogRepository.save(entity).toDto();
-    }
-
-    private AIDiagnosisEntity diagnosisRef(Long diagnosisId) {
-        AIDiagnosisEntity d = new AIDiagnosisEntity();
-        d.setDiagnosisId(diagnosisId);
-        return d;
     }
 
     // 일지 수정
@@ -80,7 +82,7 @@ public class GrowthLogService {
         entity.setContent(dto.getContent());    // 수정할 식물 관찰 내용
         entity.setPhotoUrl(dto.getPhotoUrl());  // 수정할 식물 이미지 저장
         entity.setLogDate(dto.getLogDate() != null ? dto.getLogDate() : entity.getLogDate());   // 수정한 날짜 저장
-        entity.setAiDiagnosis(dto.getDiagnosisId() != null ?diagnosisRef(dto.getDiagnosisId()):null);    // 새롭게 진단한 내역 가져오기
+        entity.setDiagnosisId(dto.getDiagnosisId());    // 새롭게 진단한 내역 가져오기
         return entity.toDto();
     }
     /*
