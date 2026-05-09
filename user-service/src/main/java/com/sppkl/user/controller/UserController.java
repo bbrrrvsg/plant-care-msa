@@ -1,10 +1,10 @@
 package com.sppkl.user.controller;
 
-
 import com.sppkl.common.dto.ApiResponse;
 import com.sppkl.user.dto.LoginRequestDto;
 import com.sppkl.user.dto.SignUpRequestDto;
 import com.sppkl.user.dto.TokenResponseDto;
+import com.sppkl.user.entity.UserInfo;
 import com.sppkl.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +27,8 @@ public class UserController {
 
     @PostMapping("/login")
     public ApiResponse login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
-        String token=userService.login(loginRequestDto);
-        return ApiResponse.success(new TokenResponseDto(token));
+        UserInfo user = userService.login(loginRequestDto);
+        String token = userService.createToken(user.getUserId());
+        return ApiResponse.success(new TokenResponseDto(token, user.getNickname()));
     }
-
-
-} //class end
+}
