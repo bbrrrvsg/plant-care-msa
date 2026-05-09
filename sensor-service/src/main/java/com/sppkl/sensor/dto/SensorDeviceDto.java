@@ -15,9 +15,9 @@ public class SensorDeviceDto {
     private Integer plantId;     // 연결된 식물 ID (식물 연결 전에는 null)
     private Integer speciesCode; // 식물 종 코드 (watering 계산용, 연결 시에만 사용)
     private String userId;       // 기기 소유자 ID
-    private boolean active;      // 기기 활성 여부
-    private int threshold;       // 토양수분 임계값 (%)
-    private int duration;        // 펌프 가동 시간 (밀리초)
+    private Boolean active;      // 기기 활성 여부
+    private Integer threshold;   // 토양수분 임계값 (%)
+    private Integer duration;    // 펌프 가동 시간 (밀리초)
 
     // DTO -> Entity
     public SensorDeviceEntity toEntity() {
