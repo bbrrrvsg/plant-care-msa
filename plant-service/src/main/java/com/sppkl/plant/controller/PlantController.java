@@ -22,7 +22,7 @@ public class PlantController {
 
     private final PlantService plantService;
 
-    @GetMapping("/plant/sensor/{plantId}")
+    @GetMapping("/sensor/{plantId}")
     public ResponseEntity<SensorDataDto> getSensorDataByPlantId(@PathVariable Integer plantId) {
         return ResponseEntity.ok(plantService.getSensorDataByPlantId(plantId));
     }

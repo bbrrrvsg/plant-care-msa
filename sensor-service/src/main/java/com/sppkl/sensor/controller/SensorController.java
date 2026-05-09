@@ -1,6 +1,6 @@
 package com.sppkl.sensor.controller;
 
-import com.sppkl.sensor.dto.SensorDataDto;
+import com.sppkl.common.dto.SensorDataDto;
 import com.sppkl.sensor.dto.SensorDeviceDto;
 import com.sppkl.sensor.service.SensorDataService;
 import com.sppkl.sensor.service.SensorDeviceService;

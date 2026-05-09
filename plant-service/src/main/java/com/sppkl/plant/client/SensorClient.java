@@ -21,6 +21,6 @@ public interface SensorClient {
     void unlinkDevice(@PathVariable String deviceId);
 
     // plantId로 센서 데이터 조회
-    @GetMapping("/data/{plantId}")
+    @GetMapping("/api/sensor/data/{plantId}")
     SensorDataDto getSensorDataByPlantId(@PathVariable("plantId") Integer plantId);
 }
