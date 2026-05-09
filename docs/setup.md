@@ -1,5 +1,20 @@
 # 개발 환경 세팅 가이드
 
+## 0. application.properties 생성 (필수)
+
+각 서비스의 `src/main/resources/` 폴더에 있는 `application.properties.example` 파일을 복사해서 `application.properties`로 이름 바꾸세요.
+
+PowerShell 한 줄로:
+```powershell
+Get-ChildItem -Recurse -Filter "application.properties.example" | ForEach-Object { Copy-Item $_.FullName ($_.FullName -replace '\.example$', '') }
+```
+
+`application.properties`는 `.gitignore`에 등록돼 있어서 **커밋되지 않습니다**. 본인 환경 비번/API 키를 자유롭게 박아도 됨.
+
+DB 비밀번호가 `root`가 아니라면 IntelliJ 실행 구성 → **환경 변수** 칸에 `DB_PASSWORD=본인비번` 입력.
+
+---
+
 ## 1. Docker Desktop 설치
 
 1. [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop) 접속
