@@ -1,6 +1,5 @@
 package com.sppkl.sensor.entity;
 
-import com.sppkl.sensor.dto.SensorDataDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 // 센서 시간별 평균 데이터 엔티티
 // 매 시간 정각에 Redis의 최신값을 평균내어 DB에 저장 (AI 진단용 히스토리)
@@ -40,19 +38,4 @@ public class SensorDataEntity {
 
     @Column(name = "record_time", nullable = false)
     private LocalDateTime recordTime; // 저장 기준 시각 (예: 14:00:00)
-
-    // Entity -> DTO
-    public SensorDataDto toDto() {
-        return SensorDataDto.builder()
-                .sensorDataId(sensorDataId)
-                .plantId(plantId)
-                .temperature(temperature)
-                .humidity(humidity)
-                .soilMoisture(soilMoisture)
-                .illuminance(illuminance)
-                .recordTime(recordTime != null
-                        ? recordTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                        : null)
-                .build();
-    }
 }
