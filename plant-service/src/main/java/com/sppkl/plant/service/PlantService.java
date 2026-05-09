@@ -1,5 +1,6 @@
 package com.sppkl.plant.service;
 
+import com.sppkl.common.dto.SensorDataDto;
 import com.sppkl.common.dto.UserResponseDto;
 import com.sppkl.plant.Entity.PlantEntity;
 import com.sppkl.plant.client.SensorClient;
@@ -39,6 +40,10 @@ public class PlantService {
                 .map(PlantEntity::getMyPlantId)
                 .collect(Collectors.toList());
     }   // ai-service에서 가져올 userId
+
+    public SensorDataDto getSensorDataByPlantId(Integer plantId){
+        return sensorClient.getSensorDataByPlantId(plantId);
+    }
 
     // 내 식물 전체 조회
     public List<PlantResponseDto> getMyPlants(String userId) {
