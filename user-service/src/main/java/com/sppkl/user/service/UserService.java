@@ -1,6 +1,7 @@
 package com.sppkl.user.service;
 
 
+import com.sppkl.common.dto.UserResponseDto;
 import com.sppkl.user.dto.LoginRequestDto;
 import com.sppkl.user.dto.SignUpRequestDto;
 import com.sppkl.user.entity.UserInfo;
@@ -51,8 +52,14 @@ public class UserService {
         return jwtTokenProvider.createToken(user.getUserId());
     }
 
-
-
-
-
+    public UserResponseDto getUser(String userId) {
+        UserInfo user = userInfoRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("유저 없음"));
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .build();
+    }
 } //class end

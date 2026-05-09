@@ -1,6 +1,6 @@
 package com.sppkl.plant.controller;
 
-import com.sppkl.plant.dto.BookDto;
+import com.sppkl.common.dto.BookDto;
 import com.sppkl.plant.service.BookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

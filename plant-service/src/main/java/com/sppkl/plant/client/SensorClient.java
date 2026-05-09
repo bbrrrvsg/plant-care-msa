@@ -1,10 +1,13 @@
 package com.sppkl.plant.client;
 
+import com.sppkl.common.dto.SensorDataDto;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 import java.util.Map;
 
 // sensor-service에 기기 연결/해제 요청
@@ -16,4 +19,8 @@ public interface SensorClient {
 
     @PatchMapping("/api/sensor/device/{deviceId}/unlink")
     void unlinkDevice(@PathVariable String deviceId);
+
+    // plantId로 센서 데이터 조회
+    @GetMapping("/data/{plantId}")
+    SensorDataDto getSensorDataByPlantId(@PathVariable("plantId") Integer plantId);
 }

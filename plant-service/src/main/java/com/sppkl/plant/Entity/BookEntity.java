@@ -1,6 +1,6 @@
 package com.sppkl.plant.Entity;
 
-import com.sppkl.plant.dto.BookDto;
+import com.sppkl.common.dto.BookDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,7 +1,7 @@
 package com.sppkl.plant.service;
 
 import com.sppkl.plant.Entity.BookEntity;
-import com.sppkl.plant.dto.BookDto;
+import com.sppkl.common.dto.BookDto;
 import com.sppkl.plant.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

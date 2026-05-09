@@ -9,8 +9,5 @@ import java.util.List;
 @Repository
 public interface AIDiagnosisRepository
         extends JpaRepository<AIDiagnosisEntity,Long> {
-    List<AIDiagnosisEntity> findByPlant_User_UserId(int userId);
+    List<AIDiagnosisEntity> findByPlantIdIn(List<Integer> plantIds);
 }
-// findByPlant로 findBy라는 조건문으로
-// Entity파일의 Plant라는 변수명을 찾고
-// 유저테이블의 User_id라는 조건으로 찾는다 ->없으면 빈 리스트로 반환
