@@ -1,0 +1,17 @@
+services:
+  redis:
+    image: redis:7.2
+    container_name: plant-care-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: plant-care-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: plantcare
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
