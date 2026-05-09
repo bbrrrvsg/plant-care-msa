@@ -1,8 +1,10 @@
 package com.sppkl.ai.client;
 
 import com.sppkl.common.dto.BookDto;  // common에 없으면 아래에서 처리
+import com.sppkl.common.dto.SensorDataDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 
@@ -14,4 +16,7 @@ public interface PlantServiceClient {
 
     @GetMapping("/plant/ids")
     List<Integer> getPlantIdsByUserId(@RequestParam String userId);
+
+    @GetMapping("/plant/sensor/{plantId}")
+    SensorDataDto getSensorDataByPlantId(@PathVariable("plantId") Integer plantId);
 }

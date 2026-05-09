@@ -1,6 +1,8 @@
 package com.sppkl.plant.controller;
 
 
+import com.sppkl.common.dto.SensorDataDto;
+import com.sppkl.plant.client.SensorClient;
 import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.service.PlantService;
@@ -19,6 +21,11 @@ import java.util.List;
 public class PlantController {
 
     private final PlantService plantService;
+
+    @GetMapping("/plant/sensor/{plantId}")
+    public ResponseEntity<SensorDataDto> getSensorDataByPlantId(@PathVariable Integer plantId) {
+        return ResponseEntity.ok(plantService.getSensorDataByPlantId(plantId));
+    }
 
     @PostMapping("/{myPlantId}/diagnosis")
     public ResponseEntity<AIDiagnosisDto> diagnosePlant(

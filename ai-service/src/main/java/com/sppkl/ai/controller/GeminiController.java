@@ -1,14 +1,13 @@
 package com.sppkl.ai.controller;
 
+import com.sppkl.ai.client.PlantServiceClient;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
-import com.sppkl.ai.entity.SensorDataEntitiy;
 import com.sppkl.common.dto.AIDiagnosisDto;
 import com.sppkl.common.dto.BookDto;
-import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
 import com.sppkl.ai.service.ImageService;
-import jakarta.persistence.EntityNotFoundException;
+import com.sppkl.common.dto.SensorDataDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +20,7 @@ import java.util.Map;
 public class GeminiController {
     @Autowired GeminiService geminiService;
     @Autowired private AIDiagnosisService aiDiagnosisService;
-    @Autowired private SensorDataRepository sensorDataRepository;
+    @Autowired private PlantServiceClient plantServiceClient;
     @Autowired private ImageService imageService;
 
     @PostMapping("/gemini")
@@ -32,12 +31,8 @@ public class GeminiController {
         String base64Image=imageService.toBase64(image);    // 이미지를 URL로 변경
         String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
 
-        SensorDataEntitiy sensorData=sensorDataRepository
-                .findTopByPlantIdOrderByMeasuredTimeDesc(plantId)
-                .orElseThrow(()->new EntityNotFoundException("센서 데이터가 없음"+plantId));
-        // 식물의 센서데이터를 가져와 내림차순
-
-        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData.toDto());  // 진단결과
+        SensorDataDto sensorData=plantServiceClient.getSensorDataByPlantId(plantId);
+        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData);  // 진단결과
 
         AIDiagnosisEntity entity = AIDiagnosisEntity.builder()
                 .plantId(plantId)
