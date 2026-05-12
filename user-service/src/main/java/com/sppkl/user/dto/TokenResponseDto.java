@@ -6,5 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class TokenResponseDto {
-    private String token; //토큰
+    private String token;
+    private String nickname;
 }
