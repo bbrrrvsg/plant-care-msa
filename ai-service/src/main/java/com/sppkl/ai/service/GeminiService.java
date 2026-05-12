@@ -110,14 +110,16 @@ public class GeminiService {
     // 식물 이름 후보 목록 반환 없으면 null
     public List<BookDto> identifyPlant(String base64Image, String mimeType) {
         String prompt =
-                "이 식물과 비슷한 식물의 이름을 한국에 있는 식물 이름으로 5가지 알려줘.\n" +
-                "식물이 아닌 경우 정확히 '식물아님'이라고만 답해줘.\n" +
-                "응답은 반드시 아래 형식으로만 해줘:\n" +
-                "식물1: (식물 이름)\n" +
-                "식물2: (식물 이름)\n" +
-                "식물3: (식물 이름)\n" +
-                "식물4: (식물 이름)\n" +
-                "식물5: (식물 이름)";
+                "이 식물 사진을 보고 아래 형식으로 답해줘.\n" +
+                        "식물1에는 사진에 나온 식물의 이름을 정확히 적어줘.\n" +
+                        "식물2~5에는 식물1과 유사한 한국에 있는 식물 이름을 적어줘.\n" +
+                        "식물이 아닌 경우 정확히 '식물아님'이라고만 답해줘.\n" +
+                        "응답은 반드시 아래 형식으로만 해줘:\n" +
+                        "식물1: (사진의 식물 이름)\n" +
+                        "식물2: (유사 식물 이름)\n" +
+                        "식물3: (유사 식물 이름)\n" +
+                        "식물4: (유사 식물 이름)\n" +
+                        "식물5: (유사 식물 이름)";
         String fullResponse = callGemini(base64Image, mimeType, prompt);
         if (fullResponse == null) return List.of();
         List<String> plantName = fullResponse.lines()
