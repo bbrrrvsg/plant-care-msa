@@ -1,6 +1,7 @@
 package com.sppkl.plant.client;
 
 import com.sppkl.common.dto.AIDiagnosisDto;
+import com.sppkl.common.dto.BookDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,11 @@ public interface AiServiceClient {
             @RequestPart("image") MultipartFile image,
             @RequestParam("plantId") Integer plantId
     );
+
+    // 식물 사진으로 식물도감 매핑
+    @PostMapping(value = "/ai/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    List<BookDto> identifyPlant(@RequestPart("image") MultipartFile image);
+
     // 진단기록 단건 조회
     @GetMapping("/diagnosis/{diagnosisId}")
     AIDiagnosisDto getDiagnosisById(@PathVariable Long diagnosisId);

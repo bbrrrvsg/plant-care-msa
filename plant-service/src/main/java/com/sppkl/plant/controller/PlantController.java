@@ -7,6 +7,7 @@ import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.service.PlantService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,9 +53,24 @@ public class PlantController {
     }
 
     // 내 식물 등록
-    @PostMapping
-    public ResponseEntity<PlantResponseDto> addMyPlant(@RequestBody PlantRequestDto dto) {
-        return ResponseEntity.ok(plantService.addMyPlant(dto));
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PlantResponseDto> addMyPlant(
+            @RequestParam("userId") String userId,
+            @RequestParam("nickname") String nickname,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "deviceId", required = false) String deviceId,
+            @RequestParam(value = "deviceName", required = false) String deviceName,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+
+        PlantRequestDto dto = PlantRequestDto.builder()
+                .userId(userId)
+                .nickname(nickname)
+                .location(location)
+                .deviceId(deviceId)
+                .deviceName(deviceName)
+                .build();
+
+        return ResponseEntity.ok(plantService.addMyPlant(dto, image));
     }
 
     // 내 식물 수정
