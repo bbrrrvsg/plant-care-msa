@@ -1,13 +1,13 @@
 package com.sppkl.ai.controller;
 
+import com.sppkl.ai.client.PlantServiceClient;
 import com.sppkl.ai.entity.AIDiagnosisEntity;
 import com.sppkl.common.dto.AIDiagnosisDto;
-import com.sppkl.ai.entity.SensorDataEntitiy;
 import com.sppkl.ai.repository.AIDiagnosisRepository;
-import com.sppkl.ai.repository.SensorDataRepository;
 import com.sppkl.ai.service.AIDiagnosisService;
 import com.sppkl.ai.service.GeminiService;
 import com.sppkl.ai.service.ImageService;
+import com.sppkl.common.dto.SensorDataDto;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +21,9 @@ import java.util.Map;
 public class AIDiagnosisController {
     @Autowired private AIDiagnosisService aiDiagnosisService;
     @Autowired private GeminiService geminiService;
-    @Autowired private SensorDataRepository sensorDataRepository;
     @Autowired private AIDiagnosisRepository aiDiagnosisRepository;
     @Autowired private ImageService imageService;
+    @Autowired private PlantServiceClient plantServiceClient;
 
     @GetMapping("/Ai")
     public List<Map<String, Object>> User_AIList(@RequestParam int userId) {
@@ -55,10 +55,10 @@ public class AIDiagnosisController {
         AIDiagnosisEntity diagnosis=aiDiagnosisRepository.findById(diagnosisId)
                 .orElseThrow(()->new EntityNotFoundException("진단 없음"+diagnosisId));
         Integer plantId=diagnosis.getPlantId();
-        SensorDataEntitiy sensorData=sensorDataRepository.findTopByPlantIdOrderByMeasuredTimeDesc(plantId)
-                .orElseThrow(()->new EntityNotFoundException("식물 없음"+plantId));
 
-        Map<String,String> diagnosisResult = geminiService.diagnose(base64, mimeType,sensorData.toDto());
+        SensorDataDto sensorData=plantServiceClient.getSensorDataByPlantId(plantId);
+
+        Map<String,String> diagnosisResult = geminiService.diagnose(base64, mimeType,sensorData);
         // 이미지를 byte[]로 변환후 제미나이한테 String타입으로 줌
         return aiDiagnosisService.update(diagnosisId, diagnosisResult,imageUrl);
     }   // POST  /http://localhost:8084/diagnosis/2

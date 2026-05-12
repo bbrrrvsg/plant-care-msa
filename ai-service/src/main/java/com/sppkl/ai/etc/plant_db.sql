@@ -43,7 +43,7 @@ CREATE TABLE sensor_data (
     humidity        DECIMAL(5,2),
     soil_moisture   DECIMAL(5,2),
     illuminance     DECIMAL(10,2),   -- 추가!
-    measured_time   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    record_time   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (sensor_data_id),
     FOREIGN KEY (plant_id) REFERENCES my_plant(plant_id) ON DELETE CASCADE
 );
@@ -97,8 +97,10 @@ VALUES ('몬스테라', '주 1회 물주기', '열대식물');
 INSERT INTO my_plant (user_id, species_code, nickname, adoption_date)
 VALUES (1, 1, '내 몬스테라', '2024-01-01');
 
-INSERT INTO sensor_data (plant_id, temperature, humidity, soil_moisture, illuminance, measured_time)
-VALUES (1, 25.5, 60.0, 45.0, 1200.0, NOW());
-
 SHOW TABLES;
 SELECT * FROM my_plant;
+SELECT * FROM SensorData WHERE plant_id = 1;
+DESC sensor_data;
+ALTER TABLE ai_diagnosis 
+ADD COLUMN create_date DATETIME,
+ADD COLUMN update_date DATETIME;

@@ -1,7 +1,8 @@
 package com.sppkl.sensor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sppkl.sensor.dto.SensorDataDto;
+import com.sppkl.common.dto.SensorDataDto;
+import com.sppkl.sensor.entity.SensorDataEntity;
 import com.sppkl.sensor.entity.SensorDeviceEntity;
 import com.sppkl.sensor.repository.SensorDataRepository;
 import com.sppkl.sensor.repository.SensorDeviceRepository;
@@ -106,10 +107,10 @@ public class SensorDataService {
             for (String json : dataList) {
                 try {
                     SensorDataDto dto = objectMapper.readValue(json, SensorDataDto.class);
-                    tempSum = tempSum.add(dto.getTemperature() != null ? dto.getTemperature() : BigDecimal.ZERO);
-                    humSum = humSum.add(dto.getHumidity() != null ? dto.getHumidity() : BigDecimal.ZERO);
-                    soilSum = soilSum.add(dto.getSoilMoisture() != null ? dto.getSoilMoisture() : BigDecimal.ZERO);
-                    luxSum = luxSum.add(dto.getIlluminance() != null ? dto.getIlluminance() : BigDecimal.ZERO);
+                    tempSum = tempSum.add(dto.getTemperature() != null ? BigDecimal.valueOf(dto.getTemperature()) : BigDecimal.ZERO);
+                    humSum = humSum.add(dto.getHumidity() != null ? BigDecimal.valueOf(dto.getHumidity()) : BigDecimal.ZERO);
+                    soilSum = soilSum.add(dto.getSoilMoisture() != null ? BigDecimal.valueOf(dto.getSoilMoisture()) : BigDecimal.ZERO);
+                    luxSum = luxSum.add(dto.getLight() != null ? BigDecimal.valueOf(dto.getLight()) : BigDecimal.ZERO);
                 } catch (Exception e) {
                     continue;
                 }
@@ -118,15 +119,20 @@ public class SensorDataService {
             BigDecimal cnt = new BigDecimal(count);
             SensorDataDto avg = SensorDataDto.builder()
                     .plantId(device.getPlantId())
-                    .temperature(tempSum.divide(cnt, 2, RoundingMode.HALF_UP))
-                    .humidity(humSum.divide(cnt, 2, RoundingMode.HALF_UP))
-                    .soilMoisture(soilSum.divide(cnt, 2, RoundingMode.HALF_UP))
-                    .illuminance(luxSum.divide(cnt, 2, RoundingMode.HALF_UP))
-                    .recordTime(LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                    .temperature(tempSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
+                    .humidity(humSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
+                    .soilMoisture(soilSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
+                    .light(luxSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
                     .build();
 
-            sensorDataRepository.save(avg.toEntity());
+            sensorDataRepository.save(SensorDataEntity.builder()
+                    .plantId(device.getPlantId())
+                    .temperature(BigDecimal.valueOf(avg.getTemperature()))
+                    .humidity(BigDecimal.valueOf(avg.getHumidity()))
+                    .soilMoisture(BigDecimal.valueOf(avg.getSoilMoisture()))
+                    .illuminance(BigDecimal.valueOf(avg.getLight()))
+                    .recordTime(LocalDateTime.now().truncatedTo(ChronoUnit.HOURS))
+                    .build());
 
             // List 초기화
             redisTemplate.delete(listKey);
