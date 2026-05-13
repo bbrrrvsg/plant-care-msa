@@ -31,7 +31,7 @@ public class AIDiagnosisController {
                 .map(dto -> new java.util.HashMap<String, Object>() {{
                     put("diagnosisId", dto.getDiagnosisId());
                     put("title", dto.getTitle());
-                    put("subtite",dto.getSubtitle());
+                    put("subtitle",dto.getSubtitle());
                     put("diagnosisDate", dto.getDiagnosisDate());
                 }})
                 .collect(java.util.stream.Collectors.toList());
