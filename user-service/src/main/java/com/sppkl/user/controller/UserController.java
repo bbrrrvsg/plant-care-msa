@@ -26,8 +26,10 @@ public class UserController {
 
     @PostMapping("/login")
     public ApiResponse login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
-        String token=userService.login(loginRequestDto);
-        return ApiResponse.success(new TokenResponseDto(token));
+
+        TokenResponseDto response = userService.login(loginRequestDto);
+
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/user/{userId}")

@@ -7,6 +7,7 @@ import com.sppkl.user.dto.SignUpRequestDto;
 import com.sppkl.user.entity.UserInfo;
 import com.sppkl.user.repository.UserInfoRepository;
 import com.sppkl.user.security.JwtTokenProvider;
+import com.sppkl.user.dto.TokenResponseDto;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,15 +42,19 @@ public class UserService {
 
 
     // 로그인
-    public String login(LoginRequestDto dto) {
+    public TokenResponseDto login(LoginRequestDto dto) {
         UserInfo user = userInfoRepository.findByUserId(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
 
         boolean isPasswordMatch = passwordEncoder.matches(dto.getPassword(), user.getPassword());
-        if (!isPasswordMatch) throw new RuntimeException("비밀번호가 일치하지 않습니다.");
 
-        //토큰 반환
-        return jwtTokenProvider.createToken(user.getUserId());
+        if (!isPasswordMatch) {
+            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+
+        String token = jwtTokenProvider.createToken(user.getUserId());
+
+        return new TokenResponseDto(token, user.getNickname());
     }
 
     public UserResponseDto getUser(String userId) {
