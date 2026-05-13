@@ -54,7 +54,11 @@ public class UserService {
 
         String token = jwtTokenProvider.createToken(user.getUserId());
 
-        return new TokenResponseDto(token, user.getNickname());
+        return new TokenResponseDto(
+                user.getId(),
+                token,
+                user.getNickname()
+        );
     }
 
     public UserResponseDto getUser(String userId) {
