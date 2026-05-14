@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, StatusBar,
+  Alert, ActivityIndicator,
 } from 'react-native';
 import { ArrowLeft, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
+import { plantApi, getUserId } from '../../services/api';
 
 export function AddPlant() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [plantName, setPlantName] = useState('');
-  const [memo, setMemo] = useState('');
+  const [location, setLocation] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -27,10 +30,30 @@ export function AddPlant() {
     }
   };
 
-  const handleSubmit = () => {
-    // TODO: 백엔드 API 전송 로직
-    console.log('등록할 식물:', { plantName, memo, imageUri });
-    navigation.navigate('MainTabs', { screen: 'Home' });
+  const handleSubmit = async () => {
+    const userId = getUserId();
+    if (userId == null) {
+      Alert.alert('로그인이 필요합니다', '다시 로그인 후 시도해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await plantApi.addPlant({
+        userId,
+        nickname: plantName.trim(),
+        location: location.trim() || undefined,
+        imageUri: imageUri ?? undefined,
+      });
+      Alert.alert('등록 완료', '새 식물이 등록되었습니다.', [
+        { text: '확인', onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }) },
+      ]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '식물 등록에 실패했습니다.';
+      Alert.alert('등록 실패', message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,18 +102,15 @@ export function AddPlant() {
             />
           </View>
 
-          {/* Memo */}
+          {/* Location */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>메모 (선택사항)</Text>
+            <Text style={styles.label}>위치 (선택사항)</Text>
             <TextInput
-              style={[styles.textInput, styles.textArea]}
-              placeholder="식물에 대한 메모를 남겨보세요..."
+              style={styles.textInput}
+              placeholder="예: 거실 창가, 베란다"
               placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              value={memo}
-              onChangeText={setMemo}
+              value={location}
+              onChangeText={setLocation}
             />
           </View>
         </ScrollView>
@@ -99,11 +119,15 @@ export function AddPlant() {
       {/* Submit Button */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.submitButton, !plantName && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!plantName || isSubmitting) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={!plantName}
+          disabled={!plantName || isSubmitting}
         >
-          <Text style={styles.submitButtonText}>식물 등록하기</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.submitButtonText}>식물 등록하기</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

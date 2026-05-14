@@ -197,8 +197,37 @@ export const plantApi = {
     request<MyPlantItem>({ url: `/plant/${myPlantId}`, method: 'GET' }),
   getPlantDetail: (myPlantId: number) =>
     request<MyPlantItem>({ url: `/plant/${myPlantId}`, method: 'GET' }),
-  addPlant: (data: CreateMyPlantDto) =>
-    request<MyPlantItem>({ url: '/plant', method: 'POST', data }),
+  async addPlant(params: {
+    userId: number;
+    nickname: string;
+    location?: string;
+    deviceId?: string;
+    deviceName?: string;
+    imageUri?: string;
+  }): Promise<MyPlantItem> {
+    const formData = new FormData();
+    formData.append('userId', String(params.userId));
+    formData.append('nickname', params.nickname);
+    if (params.location) formData.append('location', params.location);
+    if (params.deviceId) formData.append('deviceId', params.deviceId);
+    if (params.deviceName) formData.append('deviceName', params.deviceName);
+
+    if (params.imageUri) {
+      const filename = params.imageUri.split('/').pop() || 'plant.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      formData.append('image', { uri: params.imageUri, name: filename, type } as any);
+    }
+
+    try {
+      const response = await apiClient.post<MyPlantItem>('/plant', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(toErrorMessage(error));
+    }
+  },
   update: (myPlantId: number, data: Partial<CreateMyPlantDto>) =>
     request<MyPlantItem>({ url: `/plant/${myPlantId}`, method: 'PUT', data }),
   delete: (myPlantId: number) =>
