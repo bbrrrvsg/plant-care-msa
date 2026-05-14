@@ -43,3 +43,16 @@ bin/
 ### Claude Code ###
 .claude/worktrees/
 .claude/settings.local.json
+
+### Spring application config (개인 환경별 설정) ###
+**/src/main/resources/application.properties
+
+### Frontend (React Native / Expo) ###
+frontend/node_modules/
+frontend/.expo/
+frontend/.env
+frontend/.env.local
+frontend/expo.out.log
+frontend/expo.err.log
+frontend/web-build/
+frontend/dist/
