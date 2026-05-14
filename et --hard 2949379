@@ -1,0 +1,63 @@
+[33m92e764a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m심준현[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge remote-tracking branch 'origin/심준현'
+[33m586f0b7[m Merge remote-tracking branch 'origin/김용성'
+[33m2949379[m[33m ([m[1;31morigin/심준현[m[33m)[m feat 1. 식물 추가할때 종 코드 가져오기 위한 프롬프트 수정
+[33m75f76f7[m feat 1. 식물 추가 기능 ( ai-service ) 연동하여 식물도감과 매핑 완료
+[33m7e02293[m feat 1. 진단 확인 - 수정 필요 -
+[33ma22b06b[m feat 1. SensorDataDto common폴더로 이동 후 센서데이터 확인 (진단 테스트 필요)
+[33mc3f6333[m[33m ([m[1;31morigin/김용성[m[33m)[m 로컬 개발용 CORS 허용 범위 확장
+[33m1faaa0e[m 인증 예외 처리 및 CORS 설정 추가
+[33m9b839d9[m 빌드 그레이들 통합
+[33m71a8f39[m Merge remote-tracking branch 'origin/master' into 이한승
+[33ma5e5158[m chore: .idea 깃 추적 제거, .gitignore 업데이트
+[33m6f251be[m 빌드 그레이들 통합
+[33madc30b2[m 빌드 그레이들 통합
+[33me8115a1[m feat 1. ai-service 에서 plant-service로부터 sensorData 가져오는 코드 실행 오류 수정 (테스트 전)
+[33m5a1415e[m Merge remote-tracking branch 'origin/master' into 이한승
+[33m161452d[m feat 1. ai-service 에서 plant-service로부터 sensorData 가져오는 코드 실행 전
+[33m9f8102b[m 26-04-18 센서 등록
+[33mc0831d8[m feat 1. 식물 일지 (ai-servie->plant-service)이동 2. 일지 작성 진단기록 가져오기 선택적으로 수정
+[33m81ed062[m feat 1. plant-service ↔ ai-service Feign 연동 2. plant-service ↔ auth-service Feign 연동 3. 식물 등록 시 유저 존재 확인 4. 식물 등록 시 AI 식물 인식 기능 5. common 모듈 DTO 공유
+[33m9c9980c[m feat 1. gitignore커밋 방지
+[33m32e45ba[m remove secret properties from tracking
+[33m325fa38[m feat 1. 진단 기록 dto 공용으로 이동
+[33m039ab37[m feat 1. 진단 -> 식물 도감 매핑(식물의 사진을 보낸 뒤 AI가 진단한 식물의 이름을 도감을 통해 매핑)
+[33mc44d9d5[m feat 1. plant-service ↔ ai-service Feign 통신 연동 2. common 모듈에 공통 DTO 이관 (AIDiagnosisDto, BookDto) 3. ai-service에서 plant 관련 불필요한 파일 정리 4. MyPlantEntitiy 참조 → plantId로 교체
+[33m97881ea[m feat 1. 내 식물 진단 하기 기능
+[33mc8ccff9[m[33m ([m[1;31morigin/박효준[m[33m)[m Merge remote-tracking branch 'origin/이한승'
+[33m8411ea5[m feat 1. 취합 전 커밋
+[33md759940[m 26-04-18 센서 등록
+[33m76df037[m feat 1. 제미나이 진단 UI연결 오류 수정
+[33m989d3da[m feat 1. 식물 관찰 일지 목록 수정
+[33m0f44ee7[m feat 1. 식물 관찰 일지 작성 오류 수정
+[33m70a6a33[m feat 1. 식물 진단 소제목 기능 추가
+[33m2d1ab98[m feat 1. 식물진단 UI연결
+[33m3d21dd8[m Merge remote-tracking branch 'origin/심준현'
+[33m82fd603[m Merge remote-tracking branch 'origin/김용성'
+[33m4550b68[m 26-03-21 커밋 센서데이터 통신
+[33md06e9fd[m 프로젝트 구조 수정본
+[33mbc3afc4[m feat 1. 사용자에게 받은 이미지파일를 저장할 이미지 파일 static이하 폴더로 넣어 URL로 만들어주고 이미지 파일을 byte[]로 변환하여 Base64방식으로 인코딩 -> 결론 : 사용자가 보낸 이미지파일을 URL로 바꾸는 기능
+[33m6128c2f[m fix 1. 일지 CRUD 수정 - 일지 목록에 plantId,diagnosisId 못불러오는 상황, 다른 오류도 수정할 예정, 일지 상세에 이미지, 진단결과도 가져와야함
+[33mcdfd936[m 참고 1. 일지 CRUD 기능 - 진단 아이디는 서버에 어떤 진단번호를 가져올지를 입력안함
+[33m773e2dc[m Merge remote-tracking branch 'origin/master' into 심준현
+[33m94a500e[m feat 1. 일지 CRUD 기능 - 현재 진단아이디, 이미지 URL를 불러오지 못하고 있음
+[33mf28754b[m 0317 커밋2
+[33mff614ee[m Merge remote-tracking branch 'origin/심준현'
+[33m6f5afe7[m Merge remote-tracking branch 'origin/master'
+[33me40663b[m 0317 커밋
+[33ma37199f[m fix 1. 프롬포트 수정 ex) 생명을 다한 식물 사진을 넣었을 때 진단 제목이름이 "고사 상태 진단 완료"라고 뜨는 현상을 -> "고사 상태"로 수정
+[33m273722f[m fix 1. 식물 이미지를 넣지 않은 경우의 예외처리
+[33mfce2251[m fix 1. 유저 진단목록에 진단일자, 제미나이가 만들어준 진단 제목 출력확인
+[33m4f1f0f4[m feat 1. AI로부터 응답받는걸 String->Map<String,String>으로 바꿈으로써 제목,세부내용 으로 구분하여 title추가
+[33mad1a433[m feat 1. AI한테 센서값 주는 테스트 성공
+[33mf040a3f[m fix 1. 이미지 파일을 jpeg로 고정된걸 png,webp이미지 파일도 처리가능하도록 수정
+[33m73ee4a2[m feat 1. 수정 기능 - update_date최신화 확인
+[33mfa44099[m feat 1. 진단 기록 삭제 기능 2. 수정 -진행중- 진단일시를 String->LocalDateTime으로 타입을 변경 테스트
+[33m0da30eb[m 참고 1. 주석으로 표시한 부분 Tland APi에서 검색
+[33m67c5503[m fix 1. BaseTime어노테이션 오타 수정 및 파일 추가
+[33m0729fec[m feat 1. AI 테스트에 필요한 코드 커밋
+[33me022a29[m 커밋 테스트
+[33m1cd1d2d[m Merge remote-tracking branch 'origin/김용성' into 김용성
+[33mf566e2a[m 프로젝트 구조 수정본
+[33mcd01bfd[m 프로젝트 구조 수정본
+[33mb1901e2[m 프로젝트 구조 수정본
+[33m71969b3[m[33m ([m[1;32mmaster[m[33m)[m Initial commit
