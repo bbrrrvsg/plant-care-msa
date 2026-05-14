@@ -1,6 +1,7 @@
 package com.sppkl.user.controller;
 
 import com.sppkl.common.dto.ApiResponse;
+import com.sppkl.common.dto.UserResponseDto;
 import com.sppkl.user.dto.LoginRequestDto;
 import com.sppkl.user.dto.SignUpRequestDto;
 import com.sppkl.user.dto.TokenResponseDto;
@@ -8,10 +9,8 @@ import com.sppkl.user.entity.UserInfo;
 import com.sppkl.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,5 +29,10 @@ public class UserController {
         UserInfo user = userService.login(loginRequestDto);
         String token = userService.createToken(user.getUserId());
         return ApiResponse.success(new TokenResponseDto(token, user.getNickname()));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<UserResponseDto> getUser(@PathVariable String userId) {
+        return ResponseEntity.ok(userService.getUser(userId));
     }
 }

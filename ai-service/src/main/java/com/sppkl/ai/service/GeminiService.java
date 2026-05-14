@@ -115,16 +115,16 @@ public class GeminiService {
                         "식물2~5에는 식물1과 유사한 한국에 있는 식물 이름을 적어줘.\n" +
                         "식물이 아닌 경우 정확히 '식물아님'이라고만 답해줘.\n" +
                         "응답은 반드시 아래 형식으로만 해줘:\n" +
-                        "식물1: (사진의 식물 이름)\n" +
-                        "식물2: (유사 식물 이름)\n" +
-                        "식물3: (유사 식물 이름)\n" +
-                        "식물4: (유사 식물 이름)\n" +
-                        "식물5: (유사 식물 이름)";
+                        "식물1:(사진의 식물 이름)\n" +
+                        "식물2:(유사 식물 이름)\n" +
+                        "식물3:(유사 식물 이름)\n" +
+                        "식물4:(유사 식물 이름)\n" +
+                        "식물5:(유사 식물 이름)";
         String fullResponse = callGemini(base64Image, mimeType, prompt);
         if (fullResponse == null) return List.of();
         List<String> plantName = fullResponse.lines()
                 .filter(l -> l.matches("식물\\d:.*"))
-                .map(l -> l.replaceAll("식물\\d:", "").trim())
+                .map(l -> l.replaceAll("식물\\d:\\s*", "").trim())
                 .collect(Collectors.toList());
         List<BookDto> result = new ArrayList<>();
         for (String name : plantName) {
@@ -133,7 +133,6 @@ public class GeminiService {
             result.addAll(matched);
             if (result.size() >= 5) break;
         }
-        if(!result.isEmpty()) { return result.stream().limit(5).collect(Collectors.toList()); }
-        return null;
+        return result.stream().limit(5).collect(Collectors.toList());
     }
 }
