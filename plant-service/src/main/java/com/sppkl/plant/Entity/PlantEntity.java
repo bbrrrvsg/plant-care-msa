@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 
 @NoArgsConstructor@AllArgsConstructor@Data@Builder
 @Entity@Table(name = "plant")
@@ -22,6 +24,9 @@ public class PlantEntity extends BaseTime{
     private String location;      // 거실, 베란다 등
     private String deviceId;      // 연결된 센서 기기 ID (없으면 null)
 
+    @Column(name = "last_watered")
+    private LocalDateTime lastWatered;
+
     // Entity -> DTO (BookEntity에서 식물 이름, 이미지 가져옴)
     public PlantResponseDto toDto(BookEntity book) {
         return PlantResponseDto.builder()
@@ -33,6 +38,8 @@ public class PlantEntity extends BaseTime{
                 .nickname(nickname)
                 .location(location)
                 .deviceId(deviceId)
+                .registeredAt(getCreatedAt())
+                .lastWatered(lastWatered)
                 .createdAt(getCreatedAt())
                 .updatedAt(getUpdatedAt())
                 .build();

@@ -21,7 +21,7 @@ public class SensorDataDto {
     private Double soilMoisture;  // 토양 수분 (%)
     private Double temperature;   // 온도 (°C)
     private Double humidity;      // 습도 (%)
-    private Double light;         // 조도 (lux)
+    private Double illuminance;   // 조도 (lux)
     private LocalDateTime createdAt; // 측정 시간
 
 }

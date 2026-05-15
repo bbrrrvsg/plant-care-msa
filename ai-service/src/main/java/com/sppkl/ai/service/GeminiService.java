@@ -65,7 +65,7 @@ public class GeminiService {
                         "소제목: (진단 요약)" +
                         "내용: (상세 진단 내용)",
                 sensorDataDto.getSoilMoisture(), sensorDataDto.getTemperature(),
-                sensorDataDto.getLight(), sensorDataDto.getHumidity()
+                sensorDataDto.getIlluminance(), sensorDataDto.getHumidity()
         );
 
         String fullResponse = callGemini(base64Image, mimeType, prompt);

@@ -66,15 +66,15 @@ export function Home() {
   const renderPlantCard = (plant: MyPlantItem) => {
     const statusText = plant.lastWatered
       ? `마지막 급수: ${plant.lastWatered}`
-      : plant.speciesName || '등록된 식물';
+      : plant.plantName || '등록된 식물';
 
     return (
       <PlantCard
         key={plant.myPlantId}
         id={plant.myPlantId}
-        name={plant.plantName}
-        species={plant.speciesName || '종 정보 없음'}
-        image={plant.photoUrl || FALLBACK_IMAGE}
+        name={plant.nickname}
+        species={plant.plantName || '종 정보 없음'}
+        image={plant.imageUrl || FALLBACK_IMAGE}
         statusText={statusText}
         onPress={() => navigation.navigate('PlantDetail', { plantId: plant.myPlantId })}
       />

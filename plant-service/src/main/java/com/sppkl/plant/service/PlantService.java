@@ -2,11 +2,9 @@ package com.sppkl.plant.service;
 
 import com.sppkl.common.dto.BookDto;
 import com.sppkl.common.dto.SensorDataDto;
-import com.sppkl.common.dto.UserResponseDto;
 import com.sppkl.plant.Entity.PlantEntity;
 import com.sppkl.plant.client.SensorClient;
 import com.sppkl.plant.client.AiServiceClient;
-import com.sppkl.plant.client.UserServiceClient;
 import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.repository.BookRepository;
@@ -28,8 +26,6 @@ public class PlantService {
     private final PlantRepository plantRepository;
     private final BookRepository bookRepository;
     private final SensorClient sensorClient;
-    private final UserServiceClient userServiceClient;
-
     private final AiServiceClient aiServiceClient;
     public AIDiagnosisDto diagnosePlant(Integer myPlantId, MultipartFile image) {
         return aiServiceClient.diagnosePlant(image, myPlantId);
@@ -64,12 +60,6 @@ public class PlantService {
     // 내 식물 등록
     @Transactional
     public PlantResponseDto addMyPlant(PlantRequestDto dto,MultipartFile image) {
-        // 유저 존재 확인
-        UserResponseDto user = userServiceClient.getUser(dto.getUserId());
-        if (user == null) {
-            throw new RuntimeException("존재하지 않는 유저입니다.");
-        }
-
         // 이미지 있으면 ai-service로 식물 인식 → speciesCode 자동 매핑
         if (image != null && !image.isEmpty()) {
             List<BookDto> books = aiServiceClient.identifyPlant(image);

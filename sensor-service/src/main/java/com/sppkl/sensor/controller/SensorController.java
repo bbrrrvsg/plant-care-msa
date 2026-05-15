@@ -82,4 +82,12 @@ public class SensorController {
         if (data == null) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(data);
     }
+
+    // 식물의 시간별 평균 데이터 조회 (대시보드 차트용)
+    @GetMapping("/data/{plantId}/history")
+    public ResponseEntity<List<SensorDataDto>> getHistory(
+            @PathVariable Integer plantId,
+            @RequestParam(defaultValue = "10") int hours) {
+        return ResponseEntity.ok(sensorDataService.getHistory(plantId, hours));
+    }
 }

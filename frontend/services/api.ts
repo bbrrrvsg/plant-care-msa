@@ -104,7 +104,7 @@ interface ApiResponse<T> {
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 5000,
+  timeout: 30000, // 30초 타임아웃
   headers: {
     'Content-Type': 'application/json',
   },
@@ -152,6 +152,20 @@ async function request<T>(config: {
   try {
     const response = await apiClient.request<T>(config);
     return response.data;
+  } catch (error) {
+    throw new Error(toErrorMessage(error));
+  }
+}
+
+async function requestNullable<T>(config: {
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  data?: unknown;
+}) {
+  try {
+    const response = await apiClient.request<T>(config);
+    if (response.status === 204) return null;
+    return response.data ?? null;
   } catch (error) {
     throw new Error(toErrorMessage(error));
   }
@@ -250,9 +264,13 @@ export const bookApi = {
 };
 
 export const sensorApi = {
-  getLatest: () => request<SensorData>({ url: '/sensor/latest', method: 'GET' }),
-  getHistory: (plantId: string) =>
-    request<SensorData[]>({ url: `/sensor/history/${plantId}`, method: 'GET' }),
+  getLatest: (plantId: number) =>
+    requestNullable<SensorData>({ url: `/api/sensor/data/${plantId}`, method: 'GET' }),
+  getHistory: (plantId: number, hours: number = 10) =>
+    request<SensorData[]>({
+      url: `/api/sensor/data/${plantId}/history?hours=${hours}`,
+      method: 'GET',
+    }),
 };
 
 export const aiApi = {
@@ -280,32 +298,39 @@ export const aiApi = {
 };
 
 /**
- * 🌿 내 식물 데이터 타입 (백엔드 PlantResponseDto 기준)
- * 백엔드 개발자에게 응답 JSON 필드명이 아래와 일치하는지 확인할 것.
+ * 🌿 내 식물 데이터 타입 (백엔드 PlantResponseDto 1:1 대응)
  */
 export interface MyPlantItem {
-  myPlantId: number;       // 백엔드는 myPlantId (Integer)를 사용
-  userId?: number;         // 식물 주인의 ID (목록 조회 시엔 보통 생략 가능)
-  plantName: string;       // 내가 지어준 식물 이름 (별명)
-  speciesName?: string;    // 식물 종 이름 (예: 몬스테라)
-  speciesCode?: number;    // 도감과 연결하기 위한 종 코드
-  photoUrl?: string;       // 식물 사진 URL (백엔드에 따라 image, imageUrl 등으로 다를 수 있음)
-  lastWatered?: string;    // 마지막으로 물 준 날짜
-  registeredAt?: string;   // 식물을 등록한 날짜
+  myPlantId: number;
+  userId: number;
+  speciesCode?: string;
+  plantName: string;       // 종 이름 (book에서 옴)
+  imageUrl?: string;       // 식물 사진 URL
+  nickname: string;        // 사용자가 지은 별명
+  location?: string;
+  deviceId?: string;
+  registeredAt?: string;
+  lastWatered?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
+// plant-service의 PUT /plant/{id}는 nickname/location만 갱신함
 export interface CreateMyPlantDto {
-  plantName: string;
-  speciesName?: string;
-  speciesCode?: number;
-  photoUrl?: string;
+  nickname?: string;
+  location?: string;
 }
 
+// 백엔드 SensorDataDto 대응
 export interface SensorData {
+  id?: number;
+  plantId: number;
+  deviceId?: string;
+  soilMoisture: number;
   temperature: number;
   humidity: number;
-  soilMoisture: number;
-  recordedAt: string;
+  illuminance: number;
+  createdAt?: string;
 }
 
 export interface DiagnosisResult {

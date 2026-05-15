@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +58,24 @@ public class SensorDataService {
         } catch (Exception e) {
             throw new RuntimeException("Redis 저장 실패", e);
         }
+    }
+
+    // 시간별 평균 히스토리 조회 (대시보드 차트용)
+    public List<SensorDataDto> getHistory(Integer plantId, int hours) {
+        LocalDateTime since = LocalDateTime.now().minusHours(hours);
+        return sensorDataRepository
+                .findByPlantIdAndRecordTimeAfterOrderByRecordTimeAsc(plantId, since)
+                .stream()
+                .map(entity -> SensorDataDto.builder()
+                        .id(entity.getSensorDataId())
+                        .plantId(entity.getPlantId())
+                        .temperature(entity.getTemperature() != null ? entity.getTemperature().doubleValue() : null)
+                        .humidity(entity.getHumidity() != null ? entity.getHumidity().doubleValue() : null)
+                        .soilMoisture(entity.getSoilMoisture() != null ? entity.getSoilMoisture().doubleValue() : null)
+                        .illuminance(entity.getIlluminance() != null ? entity.getIlluminance().doubleValue() : null)
+                        .createdAt(entity.getRecordTime())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     // Redis 최신값 조회 (앱 실시간 조회용)
@@ -110,7 +129,7 @@ public class SensorDataService {
                     tempSum = tempSum.add(dto.getTemperature() != null ? BigDecimal.valueOf(dto.getTemperature()) : BigDecimal.ZERO);
                     humSum = humSum.add(dto.getHumidity() != null ? BigDecimal.valueOf(dto.getHumidity()) : BigDecimal.ZERO);
                     soilSum = soilSum.add(dto.getSoilMoisture() != null ? BigDecimal.valueOf(dto.getSoilMoisture()) : BigDecimal.ZERO);
-                    luxSum = luxSum.add(dto.getLight() != null ? BigDecimal.valueOf(dto.getLight()) : BigDecimal.ZERO);
+                    luxSum = luxSum.add(dto.getIlluminance() != null ? BigDecimal.valueOf(dto.getIlluminance()) : BigDecimal.ZERO);
                 } catch (Exception e) {
                     continue;
                 }
@@ -122,7 +141,7 @@ public class SensorDataService {
                     .temperature(tempSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
                     .humidity(humSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
                     .soilMoisture(soilSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
-                    .light(luxSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
+                    .illuminance(luxSum.divide(cnt, 2, RoundingMode.HALF_UP).doubleValue())
                     .build();
 
             sensorDataRepository.save(SensorDataEntity.builder()
@@ -130,7 +149,7 @@ public class SensorDataService {
                     .temperature(BigDecimal.valueOf(avg.getTemperature()))
                     .humidity(BigDecimal.valueOf(avg.getHumidity()))
                     .soilMoisture(BigDecimal.valueOf(avg.getSoilMoisture()))
-                    .illuminance(BigDecimal.valueOf(avg.getLight()))
+                    .illuminance(BigDecimal.valueOf(avg.getIlluminance()))
                     .recordTime(LocalDateTime.now().truncatedTo(ChronoUnit.HOURS))
                     .build());
 

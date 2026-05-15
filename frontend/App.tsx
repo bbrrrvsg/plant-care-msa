@@ -46,7 +46,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   PlantDetail: { plantId: number };
   AddPlant: undefined;
-  SensorDashboard: undefined;
+  SensorDashboard: { plantId: number };
   Notifications: undefined;
   Settings: undefined;
   EncyclopediaDetail: { speciesCode: number };

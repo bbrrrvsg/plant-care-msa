@@ -64,7 +64,9 @@ export function SensorRegister() {
   };
 
   const handleComplete = () => {
-    navigation.navigate('SensorDashboard');
+    if (selectedPlant) {
+      navigation.navigate('SensorDashboard', { plantId: selectedPlant.id });
+    }
   };
 
   const goBack = () => {
