@@ -274,14 +274,16 @@ export const sensorApi = {
 };
 
 export const aiApi = {
-  async diagnose(imageUri: string, plantId: number): Promise<DiagnosisResult> {
+  async diagnose(imageUri: string, plantId?: number): Promise<DiagnosisResult> {
     const filename = imageUri.split('/').pop() || 'plant.jpg';
     const match = /\.(\w+)$/.exec(filename);
     const type = match ? `image/${match[1]}` : 'image/jpeg';
 
     const formData = new FormData();
     formData.append('image', { uri: imageUri, name: filename, type } as any);
-    formData.append('plantId', String(plantId));
+    if (plantId != null) {
+      formData.append('plantId', String(plantId));
+    }
 
     try {
       const response = await apiClient.post<DiagnosisResult>('/ai/gemini', formData, {
@@ -337,6 +339,7 @@ export interface DiagnosisResult {
   diagnosisId: number;
   plantId: number;
   title: string;
+  subtitle?: string;
   details: string;
   result: string;
   imageUrl: string;

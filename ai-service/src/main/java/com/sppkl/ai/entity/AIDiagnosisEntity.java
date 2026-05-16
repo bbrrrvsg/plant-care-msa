@@ -16,7 +16,7 @@ public class AIDiagnosisEntity extends BaseTime {
     @Column(name = "diagnosis_id")
     private Long diagnosisId;
 
-    @Column(name = "plant_id", nullable = false)  // ← @ManyToOne 제거, plantId만 저장
+    @Column(name = "plant_id")  // ← @ManyToOne 제거, plantId만 저장 (nullable: "기타" 진단 허용)
     private Integer plantId;
 
     private String title;

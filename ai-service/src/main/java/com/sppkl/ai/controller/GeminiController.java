@@ -26,13 +26,22 @@ public class GeminiController {
     @PostMapping("/gemini")
     public AIDiagnosisDto diagnosePlant(
             @RequestParam("image") MultipartFile image,
-            @RequestParam("plantId") Integer plantId) throws IOException {
-        String imageUrl=imageService.save(image);   // 사용자에게 받은 이미지를 저장
-        String base64Image=imageService.toBase64(image);    // 이미지를 URL로 변경
-        String mimeType = image.getContentType(); // "image/jpeg" or "image/png" 자동 감지
+            @RequestParam(value = "plantId", required = false) Integer plantId)
+            throws IOException {
+        String imageUrl = imageService.save(image);
+        String base64Image = imageService.toBase64(image);
+        String mimeType = image.getContentType();
 
-        SensorDataDto sensorData=plantServiceClient.getSensorDataByPlantId(plantId);
-        Map<String,String> diagnosisResult = geminiService.diagnose(base64Image, mimeType,sensorData);  // 진단결과
+        SensorDataDto sensorData = null;
+        if (plantId != null) {
+            try {
+                sensorData = plantServiceClient.getSensorDataByPlantId(plantId);
+            } catch (Exception e) {
+                sensorData = null;
+            }
+        }
+
+        Map<String, String> diagnosisResult = geminiService.diagnose(base64Image, mimeType, sensorData);
 
         AIDiagnosisEntity entity = AIDiagnosisEntity.builder()
                 .plantId(plantId)

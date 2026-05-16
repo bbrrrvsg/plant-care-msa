@@ -51,22 +51,43 @@ public class GeminiService {
 
     // ✅ 기존 진단 메서드 (callGemini 재활용)
     public Map<String, String> diagnose(String base64Image, String mimeType, SensorDataDto sensorDataDto) {
-        String prompt = String.format(
-                "센서 데이터:\n- 토양 수분: %.1f%%\n- 온도: %.1f°C\n- 조도: %.1f lux\n- 습도: %.1f%%\n\n" +
-                        "위 센서 데이터와 이미지를 참고해서 이 식물의 상태를 진단하고 관리 방법을 알려줘.\n" +
-                        "단, 센서 데이터와 이미지가 불일치하더라도 이미지를 우선으로 진단해줘.\n" +
-                        "제목에 '진단완료'라는 단어는 절대 포함하지 마.\n" +
-                        "제목에는 사진에 나온 식물이름을 가져와줘\n" +
-                        "소제목은 진단 결과를 10자 이내로 요약해줘. 예) 수분 부족, 고사 상태, 잎마름병 의심\n" +
-                        "식물 사진이 아닌 경우에만 제목을 정확히 '식물아님'으로 답해줘.\n" +
-                        "진단할 수 없는 경우에만 제목을 정확히 '진단실패'로 답해줘.\n" +
-                        "응답은 반드시 아래 형식으로 해줘:\n" +
-                        "제목: 식물의 이름\n" +
-                        "소제목: (진단 요약)" +
-                        "내용: (상세 진단 내용)",
-                sensorDataDto.getSoilMoisture(), sensorDataDto.getTemperature(),
-                sensorDataDto.getIlluminance(), sensorDataDto.getHumidity()
+        // 센서 데이터 안전 처리
+        String sensorInfo;
+        boolean hasAnyValue = sensorDataDto != null && (
+            sensorDataDto.getSoilMoisture() != null ||
+            sensorDataDto.getTemperature() != null ||
+            sensorDataDto.getIlluminance() != null ||
+            sensorDataDto.getHumidity() != null
         );
+
+        if (!hasAnyValue) {
+            sensorInfo = "센서 데이터 없음 (디바이스 미연결 또는 측정값 없음). 이미지만으로 진단해줘.";
+        } else {
+            sensorInfo = String.format(
+                "센서 데이터:\n- 토양 수분: %s\n- 온도: %s\n- 조도: %s\n- 습도: %s",
+                sensorDataDto.getSoilMoisture() != null
+                    ? String.format("%.1f%%", sensorDataDto.getSoilMoisture()) : "측정값 없음",
+                sensorDataDto.getTemperature() != null
+                    ? String.format("%.1f°C", sensorDataDto.getTemperature()) : "측정값 없음",
+                sensorDataDto.getIlluminance() != null
+                    ? String.format("%.1f lux", sensorDataDto.getIlluminance()) : "측정값 없음",
+                sensorDataDto.getHumidity() != null
+                    ? String.format("%.1f%%", sensorDataDto.getHumidity()) : "측정값 없음"
+            );
+        }
+
+        String prompt = sensorInfo + "\n\n" +
+                "위 센서 데이터와 이미지를 참고해서 이 식물의 상태를 진단하고 관리 방법을 알려줘.\n" +
+                "단, 센서 데이터와 이미지가 불일치하더라도 이미지를 우선으로 진단해줘.\n" +
+                "제목에 '진단완료'라는 단어는 절대 포함하지 마.\n" +
+                "제목에는 사진에 나온 식물이름을 가져와줘\n" +
+                "소제목은 진단 결과를 10자 이내로 요약해줘. 예) 수분 부족, 고사 상태, 잎마름병 의심\n" +
+                "식물 사진이 아닌 경우에만 제목을 정확히 '식물아님'으로 답해줘.\n" +
+                "진단할 수 없는 경우에만 제목을 정확히 '진단실패'로 답해줘.\n" +
+                "응답은 반드시 아래 형식으로 해줘:\n" +
+                "제목: 식물의 이름\n" +
+                "소제목: (진단 요약)\n" +
+                "내용: (상세 진단 내용)";
 
         String fullResponse = callGemini(base64Image, mimeType, prompt);
         if (fullResponse == null) {
