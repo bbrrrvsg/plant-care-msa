@@ -297,6 +297,24 @@ export const aiApi = {
       throw new Error(toErrorMessage(error));
     }
   },
+
+  async identify(imageUri: string): Promise<PlantBookItem[]> {
+    const filename = imageUri.split('/').pop() || 'plant.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+    const formData = new FormData();
+    formData.append('image', { uri: imageUri, name: filename, type } as any);
+
+    try {
+      const response = await apiClient.post<PlantBookItem[]>('/ai/identify', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(toErrorMessage(error));
+    }
+  },
 };
 
 /**
@@ -348,17 +366,14 @@ export interface DiagnosisResult {
 
 export interface PlantBookItem {
   speciesCode: number;
-  name: string;
-  scientificName?: string;
+  plantName: string;
   imageUrl?: string;
-  difficulty?: string;
+  careLevel?: string;
 }
 
 export interface PlantBookDetail extends PlantBookItem {
-  description?: string;
-  adviseInfo?: string;
-  growthTemp?: string;
-  waterCycle?: string;
-  lightInfo?: string;
+  watering?: string;
+  sunlight?: string;
   humidity?: string;
+  temperature?: string;
 }

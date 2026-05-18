@@ -72,29 +72,29 @@ export function EncyclopediaDetail() {
         <View style={s.sheet}>
           <View style={s.titleRow}>
             <View style={{flex:1,paddingRight:16}}>
-              <Text style={s.plantName}>{plant.name}</Text>
-              {plant.scientificName ? <Text style={s.scientificName}>{plant.scientificName}</Text> : null}
+              <Text style={s.plantName}>{plant.plantName}</Text>
             </View>
-            {plant.difficulty ? (
-              <View style={s.diffBadge}><Text style={s.diffText}>{plant.difficulty}</Text></View>
+            {plant.careLevel ? (
+              <View style={s.diffBadge}><Text style={s.diffText}>{plant.careLevel}</Text></View>
             ) : null}
           </View>
-          {plant.description ? <Text style={s.desc}>{plant.description}</Text> : null}
           <View style={s.section}>
             <Text style={s.sectionTitle}>관리 가이드</Text>
             <View style={s.careGrid}>
-              <CareCard icon={<Droplets color="#3B82F6" size={20}/>} label="물주기" value={plant.waterCycle || '-'}/>
-              <CareCard icon={<Sun color="#F59E0B" size={20}/>} label="일조량" value={plant.lightInfo || '-'}/>
-              <CareCard icon={<Thermometer color="#EF4444" size={20}/>} label="적정 온도" value={plant.growthTemp || '-'}/>
-              <CareCard icon={<CloudRain color="#0EA5E9" size={20}/>} label="적정 습도" value={plant.humidity || '-'}/>
+              {plant.watering ? (
+                <CareCard icon={<Droplets color="#3B82F6" size={20}/>} label="물주기" value={plant.watering}/>
+              ) : null}
+              {plant.sunlight ? (
+                <CareCard icon={<Sun color="#F59E0B" size={20}/>} label="햇빛" value={plant.sunlight}/>
+              ) : null}
+              {plant.temperature ? (
+                <CareCard icon={<Thermometer color="#EF4444" size={20}/>} label="적정 온도" value={plant.temperature}/>
+              ) : null}
+              {plant.humidity ? (
+                <CareCard icon={<CloudRain color="#0EA5E9" size={20}/>} label="적정 습도" value={plant.humidity}/>
+              ) : null}
             </View>
           </View>
-          {plant.adviseInfo ? (
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>키우기 꿀팁</Text>
-              <View style={s.tipBox}><Text style={s.tipText}>{plant.adviseInfo}</Text></View>
-            </View>
-          ) : null}
           <View style={s.actionContainer}>
             <TouchableOpacity style={s.primaryBtn} onPress={()=>navigation.navigate('AddPlant')}>
               <Plus color="#ffffff" size={20}/><Text style={s.primaryBtnText}>내 식물로 등록하기</Text>

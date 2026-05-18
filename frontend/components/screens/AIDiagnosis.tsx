@@ -6,6 +6,7 @@ import {
 import {
   ArrowLeft, Camera, Check, RotateCcw, BookOpen,
   Stethoscope, Upload, Sparkles, Sun, Leaf, ScanLine,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -14,7 +15,7 @@ import type { MainTabParamList, RootStackParamList } from '../../App';
 import * as ImagePicker from 'expo-image-picker';
 import {
   aiApi, plantApi, getUserId,
-  MyPlantItem, DiagnosisResult,
+  MyPlantItem, DiagnosisResult, PlantBookItem,
 } from '../../services/api';
 
 type AIDiagnosisNavigationProp = CompositeNavigationProp<
@@ -22,7 +23,7 @@ type AIDiagnosisNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-type Step = 'entry' | 'analyzing' | 'result';
+type Step = 'entry' | 'analyzing' | 'result' | 'identify-result';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=80';
 
@@ -104,6 +105,7 @@ export function AIDiagnosis() {
   const [selectedPlantId, setSelectedPlantId] = useState<number | null | undefined>(undefined);
 
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
+  const [identifyResults, setIdentifyResults] = useState<PlantBookItem[]>([]);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [diagnoseError, setDiagnoseError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -155,14 +157,26 @@ export function AIDiagnosis() {
   const startDiagnosis = async (uri: string) => {
     setStep('analyzing');
     setDiagnoseError(null);
+
     try {
-      const plantIdToSend = typeof selectedPlantId === 'number' ? selectedPlantId : undefined;
-      const result = await aiApi.diagnose(uri, plantIdToSend);
-      setDiagnosis(result);
-      setProgress(100);
-      setStep('result');
+      if (selectedPlantId === null) {
+        // "기타" 선택 → 식별 흐름
+        const results = await aiApi.identify(uri);
+        setIdentifyResults(results);
+        setProgress(100);
+        setStep('identify-result');
+      } else if (typeof selectedPlantId === 'number') {
+        // 내 식물 선택 → 진단 흐름
+        const result = await aiApi.diagnose(uri, selectedPlantId);
+        setDiagnosis(result);
+        setProgress(100);
+        setStep('result');
+      } else {
+        setDiagnoseError('식물 선택 정보가 없습니다. 다시 시도해주세요.');
+        setStep('entry');
+      }
     } catch (e) {
-      setDiagnoseError(e instanceof Error ? e.message : '진단에 실패했어요.');
+      setDiagnoseError(e instanceof Error ? e.message : '처리에 실패했어요.');
       setStep('entry');
     }
   };
@@ -193,6 +207,7 @@ export function AIDiagnosis() {
 
   const resetAll = () => {
     setDiagnosis(null);
+    setIdentifyResults([]);
     setImageUri(null);
     setDiagnoseError(null);
     setStep('entry');
@@ -207,14 +222,17 @@ export function AIDiagnosis() {
           style={styles.iconButton}
           onPress={() => {
             if (step === 'entry') navigation.navigate('Home');
-            else resetAll();
+            else if (step === 'result' || step === 'identify-result') resetAll();
+            // analyzing 중에는 무시
           }}
         >
           <ArrowLeft color="#374151" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {step === 'entry' ? 'AI 식물 진단' :
-           step === 'analyzing' ? '분석 중' : '진단 결과'}
+           step === 'analyzing' ? '분석 중' :
+           step === 'identify-result' ? '식물 찾기 결과' :
+           '진단 결과'}
         </Text>
         <View style={styles.appBarBadge}>
           <Stethoscope color="#3a7d44" size={20} />
@@ -227,10 +245,14 @@ export function AIDiagnosis() {
         {step === 'entry' && (
           <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.heroTitle}>
-              식물의 건강 상태,{'\n'}AI가 확인해 드려요
+              {selectedPlantId === null
+                ? <>이 식물이 뭔지{'\n'}AI가 찾아드려요</>
+                : <>식물의 건강 상태,{'\n'}AI가 확인해 드려요</>}
             </Text>
             <Text style={styles.heroSub}>
-              잎 사진 한 장으로 질병·해충·영양 상태를 분석합니다.
+              {selectedPlantId === null
+                ? '사진을 올리면 어떤 식물인지 찾아드려요. 식물 도감에서 키우는 방법도 볼 수 있어요.'
+                : '잎의 상태가 잘 보이도록 가까이서 촬영하면 더 정확해요. 선택한 식물의 센서 데이터도 함께 분석에 사용돼요.'}
             </Text>
 
             <Text style={styles.sectionLabel}>진단할 식물</Text>
@@ -490,6 +512,106 @@ export function AIDiagnosis() {
           );
         })()}
 
+        {/* === Identify Result === */}
+        {step === 'identify-result' && (
+          <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+            {imageUri && (
+              <View style={styles.resultImageWrap}>
+                <Image source={{ uri: imageUri }} style={styles.resultImage} />
+              </View>
+            )}
+
+            {identifyResults.length === 0 ? (
+              <View style={styles.emptyResultBox}>
+                <Text style={styles.emptyResultTitle}>식물을 인식하지 못했어요</Text>
+                <Text style={styles.emptyResultDesc}>
+                  잎이 선명하게 보이는 다른 사진으로 다시 시도해주세요.
+                </Text>
+                <TouchableOpacity style={styles.outlineButton} onPress={resetAll}>
+                  <RotateCcw color="#4B5563" size={18} />
+                  <Text style={styles.outlineButtonText}>다시 시도</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.topMatchCard}>
+                  <View style={styles.topMatchBadge}>
+                    <Sparkles color="#ffffff" size={12} />
+                    <Text style={styles.topMatchBadgeText}>가장 유사한 식물</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.topMatchContent}
+                    onPress={() => navigation.navigate('EncyclopediaDetail', {
+                      speciesCode: Number(identifyResults[0].speciesCode),
+                    })}
+                  >
+                    {identifyResults[0].imageUrl && (
+                      <Image
+                        source={{ uri: identifyResults[0].imageUrl }}
+                        style={styles.topMatchImage}
+                      />
+                    )}
+                    <View style={styles.topMatchInfo}>
+                      <Text style={styles.topMatchName}>{identifyResults[0].plantName}</Text>
+                      {identifyResults[0].careLevel && (
+                        <Text style={styles.topMatchScientific}>
+                          난이도: {identifyResults[0].careLevel}
+                        </Text>
+                      )}
+                      <View style={styles.topMatchAction}>
+                        <Text style={styles.topMatchActionText}>도감에서 자세히 보기</Text>
+                        <ChevronRight color="#3a7d44" size={16} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {identifyResults.length > 1 && (
+                  <View style={{ marginTop: 16 }}>
+                    <Text style={styles.similarTitle}>유사한 식물</Text>
+                    {identifyResults.slice(1).map((item) => (
+                      <TouchableOpacity
+                        key={item.speciesCode}
+                        style={styles.similarItem}
+                        onPress={() => navigation.navigate('EncyclopediaDetail', {
+                          speciesCode: Number(item.speciesCode),
+                        })}
+                      >
+                        {item.imageUrl ? (
+                          <Image
+                            source={{ uri: item.imageUrl }}
+                            style={styles.similarImage}
+                          />
+                        ) : (
+                          <View style={[styles.similarImage, { backgroundColor: '#F3F4F6' }]} />
+                        )}
+                        <View style={styles.similarInfo}>
+                          <Text style={styles.similarName}>{item.plantName}</Text>
+                          {item.careLevel && (
+                            <Text style={styles.similarScientific} numberOfLines={1}>
+                              난이도: {item.careLevel}
+                            </Text>
+                          )}
+                        </View>
+                        <ChevronRight color="#9CA3AF" size={18} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.outlineButton, { marginTop: 24 }]}
+                  onPress={resetAll}
+                >
+                  <RotateCcw color="#4B5563" size={18} />
+                  <Text style={styles.outlineButtonText}>다시 시도</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
+        )}
+
       </View>
     </SafeAreaView>
   );
@@ -659,4 +781,121 @@ const styles = StyleSheet.create({
   outlineButtonText: { color: '#4B5563', fontWeight: '600', fontSize: 15 },
   fillButton: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#3a7d44', height: 50, borderRadius: 14, gap: 8 },
   fillButtonText: { color: '#ffffff', fontWeight: '600', fontSize: 15 },
+
+  topMatchCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#3a7d44',
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  topMatchBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#3a7d44',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomRightRadius: 12,
+    gap: 4,
+  },
+  topMatchBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  topMatchContent: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 16,
+    alignItems: 'center',
+  },
+  topMatchImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  topMatchInfo: {
+    flex: 1,
+  },
+  topMatchName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  topMatchScientific: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  topMatchAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 4,
+  },
+  topMatchActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3a7d44',
+  },
+  similarTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  similarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    marginBottom: 8,
+    gap: 12,
+  },
+  similarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+  },
+  similarInfo: {
+    flex: 1,
+  },
+  similarName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  similarScientific: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  emptyResultBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  emptyResultTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  emptyResultDesc: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
 });

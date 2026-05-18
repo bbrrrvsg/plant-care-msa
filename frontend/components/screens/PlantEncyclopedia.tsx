@@ -81,9 +81,8 @@ export function PlantEncyclopedia() {
               <TouchableOpacity key={plant.speciesCode} style={s.card} onPress={() => navigation.navigate('EncyclopediaDetail', { speciesCode: plant.speciesCode })}>
                 <Image source={plant.imageUrl ? { uri: plant.imageUrl } : undefined} style={s.cardImage}/>
                 <View style={s.cardInfo}>
-                  <Text style={s.plantName}>{plant.name}</Text>
-                  {plant.scientificName ? <Text style={s.plantSpecies}>{plant.scientificName}</Text> : null}
-                  {plant.difficulty ? <View style={s.tag}><Text style={s.tagText}>{plant.difficulty}</Text></View> : null}
+                  <Text style={s.plantName} numberOfLines={1}>{plant.plantName}</Text>
+                  {plant.careLevel ? <View style={s.tag}><Text style={s.tagText}>{plant.careLevel}</Text></View> : null}
                 </View>
               </TouchableOpacity>
             ))}
