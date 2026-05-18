@@ -1,71 +1,138 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   SafeAreaView, Platform, StatusBar, ActivityIndicator, KeyboardAvoidingView,
+  Alert, Image,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
-import {
-  ArrowLeft, Wifi, WifiOff, Cpu, Check, Droplets, Timer, Minus, Plus,
-} from 'lucide-react-native';
+import { ArrowLeft, Cpu, Check, RefreshCw } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
+import {
+  sensorApi,
+  plantApi,
+  getUserId,
+  SensorDeviceInfo,
+  MyPlantItem,
+} from '../../services/api';
 
-const mockUnlinkedDevices = [
-  { deviceId: 'AA:BB:CC:DD:EE:01', active: true },
-  { deviceId: 'AA:BB:CC:DD:EE:02', active: true },
-  { deviceId: 'AA:BB:CC:DD:EE:03', active: true },
-];
-
-const mockPlants = [
-  { id: 1, nickname: '몬스테라', species: 'Monstera Deliciosa' },
-  { id: 2, nickname: '산세베리아', species: 'Sansevieria trifasciata' },
-  { id: 3, nickname: '보스턴 고사리', species: 'Nephrolepis exaltata' },
-  { id: 4, nickname: '다육이 삼총사', species: 'Mixed Succulents' },
-];
-
-type Step = 'wifi' | 'select-device' | 'name-device' | 'link-plant' | 'settings' | 'complete';
-type WifiStatus = 'checking' | 'connected' | 'disconnected';
+type Step = 'select-device' | 'name-device' | 'link-plant' | 'complete';
+const steps: Step[] = ['select-device', 'name-device', 'link-plant', 'complete'];
 
 export function SensorRegister() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'SensorRegister'>>();
   const plantId = route.params?.plantId ?? null;
-  const [step, setStep] = useState<Step>('wifi');
-  const [isScanning, setIsScanning] = useState(false);
-  const [wifiStatus, setWifiStatus] = useState<WifiStatus>('checking');
-  const [selectedDevice, setSelectedDevice] = useState<typeof mockUnlinkedDevices[0] | null>(null);
-  const [deviceName, setDeviceName] = useState('');
-  const [selectedPlant, setSelectedPlant] = useState<typeof mockPlants[0] | null>(null);
-  const [threshold, setThreshold] = useState(30);
-  const [duration, setDuration] = useState(3000);
 
-  const steps: Step[] = ['wifi', 'select-device', 'name-device', 'link-plant', 'settings', 'complete'];
+  const [step, setStep] = useState<Step>('select-device');
+
+  const [unlinkedDevices, setUnlinkedDevices] = useState<SensorDeviceInfo[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+
+  const [selectedDevice, setSelectedDevice] = useState<SensorDeviceInfo | null>(null);
+  const [deviceName, setDeviceName] = useState('');
+
+  const [plants, setPlants] = useState<MyPlantItem[]>([]);
+  const [plantsLoading, setPlantsLoading] = useState(false);
+  const [plantsError, setPlantsError] = useState<string | null>(null);
+  const [selectedPlant, setSelectedPlant] = useState<MyPlantItem | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const progress = ((steps.indexOf(step) + 1) / steps.length) * 100;
 
-  useEffect(() => {
-    if (plantId) {
-      const found = mockPlants.find((p) => p.id.toString() === plantId);
-      if (found) setSelectedPlant(found);
+  const loadUnlinkedDevices = useCallback(async () => {
+    setDevicesLoading(true);
+    setDevicesError(null);
+    try {
+      const list = await sensorApi.getUnlinkedDevices();
+      setUnlinkedDevices(list);
+    } catch (e) {
+      setDevicesError(e instanceof Error ? e.message : '디바이스 목록을 불러오지 못했어요.');
+    } finally {
+      setDevicesLoading(false);
     }
-  }, [plantId]);
+  }, []);
 
   useEffect(() => {
-    if (step === 'wifi') {
-      setWifiStatus('checking');
-      const t = setTimeout(() => setWifiStatus('connected'), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [step]);
+    loadUnlinkedDevices();
+  }, [loadUnlinkedDevices]);
 
-  const handleScan = () => {
-    setIsScanning(true);
-    setTimeout(() => { setIsScanning(false); setStep('select-device'); }, 2000);
+  useEffect(() => {
+    if (step !== 'link-plant') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setPlantsLoading(true);
+        setPlantsError(null);
+        const userId = getUserId();
+        if (userId == null) {
+          if (!cancelled) {
+            setPlantsError('로그인이 필요합니다.');
+            setPlantsLoading(false);
+          }
+          return;
+        }
+        const data = await plantApi.getMyPlants(userId);
+        if (!cancelled) {
+          setPlants(data);
+          if (plantId) {
+            const found = data.find((p) => String(p.myPlantId) === plantId);
+            if (found) setSelectedPlant(found);
+          }
+          setPlantsLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setPlantsError(e instanceof Error ? e.message : '식물 목록을 불러오지 못했어요.');
+          setPlantsLoading(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, plantId]);
+
+  const handleSubmit = async () => {
+    if (!selectedDevice || !selectedPlant) return;
+
+    const userId = getUserId();
+    if (userId == null) {
+      Alert.alert('오류', '로그인 정보를 찾을 수 없어요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      if (deviceName.trim()) {
+        await sensorApi.updateDeviceName(selectedDevice.deviceId, deviceName.trim());
+      }
+
+      await sensorApi.linkDevice(selectedDevice.deviceId, {
+        plantId: selectedPlant.myPlantId,
+        userId: String(userId),
+        deviceName: deviceName.trim() || selectedDevice.deviceId,
+        speciesCode: selectedPlant.speciesCode
+          ? Number(selectedPlant.speciesCode)
+          : undefined,
+      });
+
+      setStep('complete');
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '디바이스 연결에 실패했어요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleComplete = () => {
     if (selectedPlant) {
-      navigation.navigate('SensorDashboard', { plantId: selectedPlant.id });
+      navigation.navigate('SensorDashboard', { plantId: selectedPlant.myPlantId });
+    } else {
+      navigation.goBack();
     }
   };
 
@@ -82,7 +149,6 @@ export function SensorRegister() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
 
-      {/* AppBar */}
       <View style={styles.appBar}>
         <TouchableOpacity style={styles.iconButton} onPress={goBack}>
           <ArrowLeft color="#374151" size={24} />
@@ -91,7 +157,6 @@ export function SensorRegister() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Progress */}
       <View style={styles.progressContainer}>
         <View style={[styles.progressBar, { width: `${progress}%` as any }]} />
       </View>
@@ -99,74 +164,59 @@ export function SensorRegister() {
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
 
-          {/* STEP: wifi */}
-          {step === 'wifi' && (
-            <View style={styles.stepContainer}>
-              <View style={styles.stepIconCircle}>
-                <Wifi color="#3a7d44" size={48} />
-              </View>
-              <Text style={styles.stepTitle}>Wi-Fi 연결 확인</Text>
-              <Text style={styles.stepDesc}>기기를 등록하려면 스마트폰이 2.4GHz Wi-Fi에 연결되어 있어야 합니다.</Text>
-
-              <View style={styles.wifiStatusCard}>
-                {wifiStatus === 'checking' && (
-                  <View style={styles.statusRow}>
-                    <ActivityIndicator size="small" color="#9CA3AF" />
-                    <Text style={styles.statusText}>네트워크 확인 중...</Text>
-                  </View>
-                )}
-                {wifiStatus === 'connected' && (
-                  <View style={styles.statusRow}>
-                    <Wifi color="#10B981" size={20} />
-                    <Text style={styles.statusTextSuccess}>Home_WiFi_2.4G 연결됨</Text>
-                  </View>
-                )}
-                {wifiStatus === 'disconnected' && (
-                  <View style={styles.statusRow}>
-                    <WifiOff color="#EF4444" size={20} />
-                    <Text style={styles.statusTextError}>Wi-Fi에 연결되어 있지 않습니다</Text>
-                  </View>
-                )}
-              </View>
-
-              <TouchableOpacity
-                style={[styles.primaryButton, (wifiStatus !== 'connected' || isScanning) && styles.buttonDisabled]}
-                disabled={wifiStatus !== 'connected' || isScanning}
-                onPress={handleScan}
-              >
-                {isScanning ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryButtonText}>주변 기기 스캔하기</Text>}
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* STEP: select-device */}
           {step === 'select-device' && (
             <View style={styles.stepContainer}>
               <Text style={styles.stepTitleLeft}>등록할 기기 선택</Text>
-              <Text style={styles.stepDescLeft}>전원이 켜져 있고 파란색 불이 깜빡이는 기기를 선택하세요.</Text>
-              <View style={styles.listContainer}>
-                {mockUnlinkedDevices.map((device) => {
-                  const isSelected = selectedDevice?.deviceId === device.deviceId;
-                  return (
-                    <TouchableOpacity
-                      key={device.deviceId}
-                      style={[styles.listItem, isSelected && styles.listItemSelected]}
-                      onPress={() => setSelectedDevice(device)}
-                    >
-                      <View style={styles.listItemLeft}>
-                        <View style={[styles.itemIconCircle, isSelected && styles.itemIconCircleSelected]}>
-                          <Cpu color={isSelected ? '#3a7d44' : '#6B7280'} size={20} />
+              <Text style={styles.stepDescLeft}>전원이 켜져 있는 ESP32 기기 중에서 등록할 디바이스를 선택하세요.</Text>
+
+              {devicesLoading ? (
+                <View style={styles.centerBox}>
+                  <ActivityIndicator size="large" color="#3a7d44" />
+                </View>
+              ) : devicesError && unlinkedDevices.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>{devicesError}</Text>
+                  <TouchableOpacity style={styles.outlineButton} onPress={loadUnlinkedDevices}>
+                    <RefreshCw color="#3a7d44" size={16} />
+                    <Text style={styles.outlineButtonText}>다시 시도</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : unlinkedDevices.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>주변에 등록 대기 중인 디바이스가 없어요.{'\n'}ESP32 전원을 켜고 잠시 기다려주세요.</Text>
+                  <TouchableOpacity style={styles.outlineButton} onPress={loadUnlinkedDevices}>
+                    <RefreshCw color="#3a7d44" size={16} />
+                    <Text style={styles.outlineButtonText}>새로고침</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.listContainer}>
+                  {unlinkedDevices.map((device) => {
+                    const isSelected = selectedDevice?.deviceId === device.deviceId;
+                    return (
+                      <TouchableOpacity
+                        key={device.deviceId}
+                        style={[styles.listItem, isSelected && styles.listItemSelected]}
+                        onPress={() => setSelectedDevice(device)}
+                      >
+                        <View style={styles.listItemLeft}>
+                          <View style={[styles.itemIconCircle, isSelected && styles.itemIconCircleSelected]}>
+                            <Cpu color={isSelected ? '#3a7d44' : '#6B7280'} size={20} />
+                          </View>
+                          <View>
+                            <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]}>
+                              {device.deviceName || 'SPPKL Sensor'}
+                            </Text>
+                            <Text style={styles.itemSubtitle}>{device.deviceId}</Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]}>SPPKL Sensor</Text>
-                          <Text style={styles.itemSubtitle}>{device.deviceId}</Text>
-                        </View>
-                      </View>
-                      {isSelected && <Check color="#3a7d44" size={20} />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        {isSelected && <Check color="#3a7d44" size={20} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
               <TouchableOpacity
                 style={[styles.primaryButton, !selectedDevice && styles.buttonDisabled]}
                 disabled={!selectedDevice}
@@ -177,7 +227,6 @@ export function SensorRegister() {
             </View>
           )}
 
-          {/* STEP: name-device */}
           {step === 'name-device' && (
             <View style={styles.stepContainer}>
               <Text style={styles.stepTitleLeft}>기기 이름 설정</Text>
@@ -191,10 +240,10 @@ export function SensorRegister() {
                   onChangeText={setDeviceName}
                   autoFocus
                 />
+                <Text style={styles.inputHint}>비워두면 기기 ID로 자동 설정됩니다.</Text>
               </View>
               <TouchableOpacity
-                style={[styles.primaryButton, !deviceName.trim() && styles.buttonDisabled]}
-                disabled={!deviceName.trim()}
+                style={styles.primaryButton}
                 onPress={() => setStep('link-plant')}
               >
                 <Text style={styles.primaryButtonText}>다음</Text>
@@ -202,111 +251,81 @@ export function SensorRegister() {
             </View>
           )}
 
-          {/* STEP: link-plant */}
           {step === 'link-plant' && (
             <View style={styles.stepContainer}>
               <Text style={styles.stepTitleLeft}>식물 연결</Text>
               <Text style={styles.stepDescLeft}>이 센서가 관리할 식물을 선택해주세요.</Text>
-              <View style={styles.listContainer}>
-                {mockPlants.map((plant) => {
-                  const isSelected = selectedPlant?.id === plant.id;
-                  return (
-                    <TouchableOpacity
-                      key={plant.id}
-                      style={[styles.listItem, isSelected && styles.listItemSelected]}
-                      onPress={() => setSelectedPlant(plant)}
-                    >
-                      <View style={styles.listItemLeft}>
-                        <View style={[styles.itemIconCircle, isSelected && styles.itemIconCircleSelected]}>
-                          <Text style={styles.emojiText}>🌱</Text>
+
+              {plantsLoading ? (
+                <View style={styles.centerBox}>
+                  <ActivityIndicator size="large" color="#3a7d44" />
+                </View>
+              ) : plantsError ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>{plantsError}</Text>
+                </View>
+              ) : plants.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>등록된 식물이 없어요.{'\n'}먼저 식물을 등록해주세요.</Text>
+                  <TouchableOpacity
+                    style={styles.outlineButton}
+                    onPress={() => navigation.navigate('AddPlant')}
+                  >
+                    <Text style={styles.outlineButtonText}>식물 등록하기</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.listContainer}>
+                  {plants.map((plant) => {
+                    const isSelected = selectedPlant?.myPlantId === plant.myPlantId;
+                    return (
+                      <TouchableOpacity
+                        key={plant.myPlantId}
+                        style={[styles.listItem, isSelected && styles.listItemSelected]}
+                        onPress={() => setSelectedPlant(plant)}
+                      >
+                        <View style={styles.listItemLeft}>
+                          <View style={[styles.itemIconCircle, isSelected && styles.itemIconCircleSelected]}>
+                            {plant.imageUrl ? (
+                              <Image source={{ uri: plant.imageUrl }} style={styles.plantThumb} />
+                            ) : (
+                              <Text style={styles.emojiText}>🌱</Text>
+                            )}
+                          </View>
+                          <View>
+                            <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]}>
+                              {plant.nickname}
+                            </Text>
+                            <Text style={styles.itemSubtitle}>{plant.plantName}</Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text style={[styles.itemTitle, isSelected && styles.itemTitleSelected]}>{plant.nickname}</Text>
-                          <Text style={styles.itemSubtitle}>{plant.species}</Text>
-                        </View>
-                      </View>
-                      {isSelected && <Check color="#3a7d44" size={20} />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        {isSelected && <Check color="#3a7d44" size={20} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {submitError && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{submitError}</Text>
+                </View>
+              )}
+
               <TouchableOpacity
-                style={[styles.primaryButton, !selectedPlant && styles.buttonDisabled]}
-                disabled={!selectedPlant}
-                onPress={() => setStep('settings')}
+                style={[styles.primaryButton, (!selectedPlant || isSubmitting) && styles.buttonDisabled]}
+                disabled={!selectedPlant || isSubmitting}
+                onPress={handleSubmit}
               >
-                <Text style={styles.primaryButtonText}>다음</Text>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>디바이스 연결</Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
 
-          {/* STEP: settings — @react-native-community/slider 사용 */}
-          {step === 'settings' && (
-            <View style={styles.stepContainer}>
-              <Text style={styles.stepTitleLeft}>센서 세부 설정</Text>
-              <Text style={styles.stepDescLeft}>자동 물주기를 위한 기준값을 설정합니다.</Text>
-
-              {/* Threshold Slider */}
-              <View style={styles.settingCard}>
-                <View style={styles.settingHeader}>
-                  <View style={styles.settingHeaderLeft}>
-                    <Droplets color="#3B82F6" size={20} />
-                    <Text style={styles.settingTitle}>수분 임계값</Text>
-                  </View>
-                  <Text style={styles.settingValue}>{threshold}%</Text>
-                </View>
-                <Text style={styles.settingHint}>토양 수분이 이 수치 이하로 떨어지면 펌프가 가동됩니다.</Text>
-                <Slider
-                  style={{ width: '100%', height: 40 }}
-                  minimumValue={10}
-                  maximumValue={80}
-                  step={5}
-                  value={threshold}
-                  onValueChange={(v) => setThreshold(Math.round(v))}
-                  minimumTrackTintColor="#3B82F6"
-                  maximumTrackTintColor="#F3F4F6"
-                  thumbTintColor="#3B82F6"
-                />
-                <View style={styles.sliderLabels}>
-                  <Text style={styles.sliderLabel}>10%</Text>
-                  <Text style={styles.sliderLabel}>80%</Text>
-                </View>
-              </View>
-
-              {/* Duration Slider */}
-              <View style={styles.settingCard}>
-                <View style={styles.settingHeader}>
-                  <View style={styles.settingHeaderLeft}>
-                    <Timer color="#F59E0B" size={20} />
-                    <Text style={styles.settingTitle}>펌프 가동 시간</Text>
-                  </View>
-                  <Text style={styles.settingValue}>{(duration / 1000).toFixed(1)}초</Text>
-                </View>
-                <Text style={styles.settingHint}>1회 작동 시 물을 공급할 시간입니다.</Text>
-                <Slider
-                  style={{ width: '100%', height: 40 }}
-                  minimumValue={1000}
-                  maximumValue={10000}
-                  step={500}
-                  value={duration}
-                  onValueChange={(v) => setDuration(Math.round(v))}
-                  minimumTrackTintColor="#F59E0B"
-                  maximumTrackTintColor="#F3F4F6"
-                  thumbTintColor="#F59E0B"
-                />
-                <View style={styles.sliderLabels}>
-                  <Text style={styles.sliderLabel}>1.0초</Text>
-                  <Text style={styles.sliderLabel}>10.0초</Text>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.primaryButton} onPress={() => setStep('complete')}>
-                <Text style={styles.primaryButtonText}>설정 완료</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* STEP: complete */}
           {step === 'complete' && (
             <View style={styles.stepContainer}>
               <View style={styles.stepIconCircle}>
@@ -319,11 +338,9 @@ export function SensorRegister() {
 
               <View style={styles.summaryCard}>
                 {[
-                  { label: '기기 ID',      value: selectedDevice?.deviceId ?? '-' },
-                  { label: '기기 별명',    value: deviceName },
-                  { label: '연결 식물',    value: selectedPlant?.nickname ?? '-' },
-                  { label: '수분 임계값',  value: `${threshold}%` },
-                  { label: '펌프 가동',    value: `${(duration / 1000).toFixed(1)}초` },
+                  { label: '기기 ID',   value: selectedDevice?.deviceId ?? '-' },
+                  { label: '기기 별명', value: deviceName.trim() || '(기본값)' },
+                  { label: '연결 식물', value: selectedPlant?.nickname ?? '-' },
                 ].map((row) => (
                   <View key={row.label} style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>{row.label}</Text>
@@ -331,6 +348,8 @@ export function SensorRegister() {
                   </View>
                 ))}
               </View>
+
+              <Text style={styles.autoNote}>물주기 설정은 식물 도감을 바탕으로 자동 설정되었어요.</Text>
 
               <TouchableOpacity style={styles.primaryButton} onPress={handleComplete}>
                 <Text style={styles.primaryButtonText}>센서 대시보드로 이동</Text>
@@ -366,14 +385,19 @@ const styles = StyleSheet.create({
   stepDesc: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 32, paddingHorizontal: 20 },
   stepTitleLeft: { fontSize: 22, fontWeight: '800', color: '#111827', marginBottom: 8, alignSelf: 'flex-start' },
   stepDescLeft: { fontSize: 14, color: '#6B7280', marginBottom: 24, alignSelf: 'flex-start' },
-  wifiStatusCard: {
-    width: '100%', backgroundColor: '#ffffff', padding: 20,
-    borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 32,
+  centerBox: { width: '100%', paddingVertical: 48, alignItems: 'center', marginBottom: 32 },
+  emptyBox: {
+    width: '100%', backgroundColor: '#ffffff', borderRadius: 16,
+    borderWidth: 1, borderColor: '#E5E7EB', padding: 24,
+    alignItems: 'center', gap: 16, marginBottom: 32,
   },
-  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  statusText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
-  statusTextSuccess: { fontSize: 15, color: '#059669', fontWeight: '600' },
-  statusTextError: { fontSize: 15, color: '#DC2626', fontWeight: '600' },
+  emptyText: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 },
+  outlineButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderWidth: 1, borderColor: '#7CCB8A', borderRadius: 12, backgroundColor: '#F0FDF4',
+  },
+  outlineButtonText: { fontSize: 14, fontWeight: '600', color: '#3a7d44' },
   listContainer: { width: '100%', gap: 12, marginBottom: 32 },
   listItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -385,8 +409,10 @@ const styles = StyleSheet.create({
   itemIconCircle: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 16,
+    overflow: 'hidden',
   },
   itemIconCircleSelected: { backgroundColor: '#ffffff' },
+  plantThumb: { width: '100%', height: '100%' },
   emojiText: { fontSize: 18 },
   itemTitle: { fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 4 },
   itemTitleSelected: { color: '#111827' },
@@ -396,24 +422,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#D1D5DB',
     borderRadius: 16, paddingHorizontal: 16, height: 56, fontSize: 16, color: '#111827',
   },
-  settingCard: {
-    width: '100%', backgroundColor: '#ffffff', borderRadius: 20,
-    padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#E5E7EB',
-  },
-  settingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  settingHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  settingTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  settingValue: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  settingHint: { fontSize: 13, color: '#6B7280', marginBottom: 12 },
-  sliderLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
-  sliderLabel: { fontSize: 12, color: '#9CA3AF' },
+  inputHint: { fontSize: 12, color: '#9CA3AF', marginTop: 8, marginLeft: 4 },
   summaryCard: {
     width: '100%', backgroundColor: '#ffffff', borderRadius: 20, padding: 20,
-    borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 32, gap: 12,
+    borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 16, gap: 12,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   summaryLabel: { fontSize: 14, color: '#6B7280' },
   summaryValue: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  autoNote: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 24, paddingHorizontal: 12 },
+  errorBox: {
+    width: '100%', backgroundColor: '#FEF2F2', borderRadius: 12,
+    borderWidth: 1, borderColor: '#FECACA', padding: 12, marginBottom: 16,
+  },
+  errorText: { fontSize: 13, color: '#991B1B' },
   primaryButton: {
     width: '100%', height: 56, backgroundColor: '#2d5a27',
     borderRadius: 16, alignItems: 'center', justifyContent: 'center',

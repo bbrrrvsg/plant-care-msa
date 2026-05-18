@@ -7,7 +7,7 @@ import { ChevronLeft, MoreVertical, Droplets, Sun, Thermometer, Calendar, PlusCi
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
-import { plantApi, sensorApi, MyPlantItem, SensorData } from '../../services/api';
+import { plantApi, sensorApi, growthLogApi, MyPlantItem, SensorData, GrowthLogItem, getUserId } from '../../services/api';
 import { getMoistureStatus, getTempStatus, getIlluminanceStatus } from '../../lib/sensorHelpers';
 import { Colors } from '../../theme';
 
@@ -37,6 +37,29 @@ const formatLastWatered = (dateStr?: string) => {
   return `${days}일 전`;
 };
 
+const formatLogDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}.${mm}.${dd}`;
+  } catch {
+    return dateStr;
+  }
+};
+
+const getRecentPlantLogs = (allLogs: GrowthLogItem[], plantId: number) =>
+  allLogs
+    .filter((log) => log.plantId === plantId)
+    .sort((a, b) => {
+      const ta = a.createDate ? new Date(a.createDate).getTime() : 0;
+      const tb = b.createDate ? new Date(b.createDate).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 3);
+
 export function PlantDetail() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PlantDetail'>>();
@@ -44,6 +67,7 @@ export function PlantDetail() {
 
   const [plant, setPlant] = useState<MyPlantItem | null>(null);
   const [sensor, setSensor] = useState<SensorData | null>(null);
+  const [logs, setLogs] = useState<GrowthLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +75,19 @@ export function PlantDetail() {
     try {
       setIsLoading(true);
       setError(null);
-      const [plantData, sensorData] = await Promise.all([
+      const userId = getUserId();
+
+      const [plantData, sensorData, allLogs] = await Promise.all([
         plantApi.getById(plantId),
         sensorApi.getLatest(plantId).catch(() => null),
+        userId != null
+          ? growthLogApi.getMyLogs(userId).catch(() => [] as GrowthLogItem[])
+          : Promise.resolve([] as GrowthLogItem[]),
       ]);
+
       setPlant(plantData);
       setSensor(sensorData);
+      setLogs(getRecentPlantLogs(allLogs, plantId));
     } catch (e) {
       setError(e instanceof Error ? e.message : '식물 정보를 불러오지 못했어요.');
     } finally {
@@ -70,13 +101,22 @@ export function PlantDetail() {
       try {
         setIsLoading(true);
         setError(null);
-        const [plantData, sensorData] = await Promise.all([
+        const userId = getUserId();
+
+        const [plantData, sensorData, allLogs] = await Promise.all([
           plantApi.getById(plantId),
           sensorApi.getLatest(plantId).catch(() => null),
+          userId != null
+            ? growthLogApi.getMyLogs(userId).catch(() => [] as GrowthLogItem[])
+            : Promise.resolve([] as GrowthLogItem[]),
         ]);
+
+        const plantLogs = getRecentPlantLogs(allLogs, plantId);
+
         if (!cancelled) {
           setPlant(plantData);
           setSensor(sensorData);
+          setLogs(plantLogs);
         }
       } catch (e) {
         if (!cancelled) {
@@ -178,14 +218,48 @@ export function PlantDetail() {
           <View style={s.sectionContainer}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionTitle}>성장 일지</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('DiaryWrite')}>
+              <TouchableOpacity onPress={() => navigation.navigate('DiaryWrite', { plantId })}>
                 <PlusCircle color="#3a7d44" size={24} />
               </TouchableOpacity>
             </View>
-            <View style={s.diaryCard}>
-              <Text style={s.diaryDate}>2024.05.20</Text>
-              <Text style={s.diaryContent}>새 잎이 돋아나기 시작했어요! 너무 귀여워요.</Text>
-            </View>
+
+            {logs.length === 0 ? (
+              <TouchableOpacity
+                style={s.diaryEmptyCard}
+                onPress={() => navigation.navigate('DiaryWrite', { plantId })}
+              >
+                <Text style={s.diaryEmptyText}>
+                  아직 작성된 일지가 없어요{'\n'}첫 기록을 남겨보세요
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ gap: 10 }}>
+                {logs.map((log) => (
+                  <View key={log.logId} style={s.diaryCard}>
+                    <View style={s.diaryHeader}>
+                      <Text style={s.diaryDate}>
+                        {formatLogDate(log.logDate || log.createDate)}
+                      </Text>
+                      {log.type && (
+                        <View style={s.diaryTypeTag}>
+                          <Text style={s.diaryTypeText}>{log.type}</Text>
+                        </View>
+                      )}
+                    </View>
+                    {log.title && <Text style={s.diaryTitle}>{log.title}</Text>}
+                    <Text style={s.diaryContent} numberOfLines={2}>
+                      {log.content}
+                    </Text>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  style={s.diaryMoreBtn}
+                  onPress={() => navigation.navigate('MainTabs', { screen: 'Diary' })}
+                >
+                  <Text style={s.diaryMoreText}>전체 일지 보기</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
           <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('SensorRegister')}>
             <Settings color="#374151" size={20} />
@@ -229,7 +303,54 @@ const s = StyleSheet.create({
   statusTagText: { fontSize: 10, fontWeight: '600', color: '#2E7D32' },
   diaryCard: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E5E7EB' },
   diaryDate: { fontSize: 12, color: '#9CA3AF', marginBottom: 6 },
+  diaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  diaryTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  diaryTypeTag: {
+    backgroundColor: 'rgba(124,203,138,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  diaryTypeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#3a7d44',
+  },
   diaryContent: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  diaryEmptyCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  diaryEmptyText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  diaryMoreBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  diaryMoreText: {
+    fontSize: 13,
+    color: '#3a7d44',
+    fontWeight: '600',
+  },
   secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: '#D1D5DB', marginTop: 8 },
   secondaryBtnText: { fontSize: 14, color: '#374151', fontWeight: '600' },
 });

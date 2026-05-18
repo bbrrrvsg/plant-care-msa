@@ -54,6 +54,12 @@ public class SensorController {
         return ResponseEntity.ok(sensorDeviceService.getUnlinkedDevices());
     }
 
+    // 내 디바이스 목록 조회 (연결 + 미연결 모두 포함, 활성 디바이스만)
+    @GetMapping("/device")
+    public ResponseEntity<List<SensorDeviceDto>> getMyDevices(@RequestParam String userId) {
+        return ResponseEntity.ok(sensorDeviceService.getMyDevices(userId));
+    }
+
     // 식물 연결 해제 (식물 교체 시 사용)
     @PatchMapping("/device/{deviceId}/unlink")
     public ResponseEntity<?> unlinkPlant(@PathVariable String deviceId) {

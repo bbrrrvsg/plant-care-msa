@@ -28,20 +28,22 @@ public class GrowthLogController {
         return ResponseEntity.ok(growthLogService.getDetailLog(logId, includeDiagnosis));
     }
 
-    // 작성
-    @PostMapping("write")
-    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogRequestDto growthLogRequestDto) {
-        return ResponseEntity.ok(growthLogService.logWrite(growthLogRequestDto));
-    }
-    // POST /growth-log
-    /* Body:
-{
-  "plantId": 1,
-  "diagnosisId": 1,
-  "title": "오늘의 일지",
-  "content": "잘 자라고 있어요"
-}
+    /* POST /growth-log/write
+       Body:
+       {
+         "plantId": 1,
+         "title": "오늘의 일지",
+         "content": "잘 자라고 있어요",
+         "type": "성장 기록",
+         "logDate": "2026-05-18",      // 선택, 없으면 오늘
+         "diagnosisId": null,           // 선택
+         "photoUrl": null               // 선택
+       }
     */
+    @PostMapping("/write")
+    public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogRequestDto requestDto) {
+        return ResponseEntity.ok(growthLogService.logWrite(requestDto));
+    }
 
     // 수정
     @PutMapping("/{logId}")

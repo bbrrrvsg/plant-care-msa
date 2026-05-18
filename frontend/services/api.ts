@@ -146,7 +146,7 @@ function toErrorMessage(error: unknown) {
 
 async function request<T>(config: {
   url: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   data?: unknown;
 }) {
   try {
@@ -159,7 +159,7 @@ async function request<T>(config: {
 
 async function requestNullable<T>(config: {
   url: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   data?: unknown;
 }) {
   try {
@@ -173,7 +173,7 @@ async function requestNullable<T>(config: {
 
 async function requestApiData<T>(config: {
   url: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   data?: unknown;
 }) {
   const response = await request<ApiResponse<T>>(config);
@@ -271,6 +271,84 @@ export const sensorApi = {
       url: `/api/sensor/data/${plantId}/history?hours=${hours}`,
       method: 'GET',
     }),
+
+  // 미연결 디바이스 목록 (ESP32 자동 등록 후 link 안 된 것들)
+  getUnlinkedDevices: () =>
+    request<SensorDeviceInfo[]>({
+      url: '/api/sensor/device/unlinked',
+      method: 'GET',
+    }),
+
+  // 내가 연결한 디바이스 목록
+  getMyDevices: (userId: string) =>
+    request<SensorDeviceInfo[]>({
+      url: `/api/sensor/device?userId=${encodeURIComponent(userId)}`,
+      method: 'GET',
+    }),
+
+  // 디바이스 별명 설정
+  updateDeviceName: (deviceId: string, deviceName: string) =>
+    request<void>({
+      url: `/api/sensor/device/${encodeURIComponent(deviceId)}/name`,
+      method: 'PATCH',
+      data: { deviceName },
+    }),
+
+  // 디바이스 → 식물 연결
+  linkDevice: (deviceId: string, payload: {
+    plantId: number;
+    userId: string;
+    deviceName?: string;
+    speciesCode?: number;
+  }) =>
+    request<void>({
+      url: `/api/sensor/device/${encodeURIComponent(deviceId)}/link`,
+      method: 'PATCH',
+      data: payload,
+    }),
+
+  // 디바이스 → 식물 연결 해제
+  unlinkDevice: (deviceId: string) =>
+    request<void>({
+      url: `/api/sensor/device/${encodeURIComponent(deviceId)}/unlink`,
+      method: 'PATCH',
+    }),
+};
+
+// 🌱 성장 일지(GrowthLog) API — plant-service의 /growth-log/** 라우트
+// 백엔드 GrowthLogDto/RequestDto 1:1 대응. 응답은 래퍼 없이 DTO 또는 배열 그대로.
+export const growthLogApi = {
+  getMyLogs: (userId: number) =>
+    request<GrowthLogItem[]>({
+      url: `/growth-log?userId=${userId}`,
+      method: 'GET',
+    }),
+
+  getDetail: (logId: number, includeDiagnosis: boolean = false) =>
+    request<GrowthLogItem>({
+      url: `/growth-log/${logId}?includeDiagnosis=${includeDiagnosis}`,
+      method: 'GET',
+    }),
+
+  write: (data: CreateGrowthLogDto) =>
+    request<GrowthLogItem>({
+      url: '/growth-log/write',
+      method: 'POST',
+      data,
+    }),
+
+  update: (logId: number, data: Partial<GrowthLogItem>) =>
+    request<GrowthLogItem>({
+      url: `/growth-log/${logId}`,
+      method: 'PUT',
+      data,
+    }),
+
+  delete: (logId: number) =>
+    request<boolean>({
+      url: `/growth-log/${logId}`,
+      method: 'DELETE',
+    }),
 };
 
 export const aiApi = {
@@ -341,6 +419,20 @@ export interface CreateMyPlantDto {
   location?: string;
 }
 
+// 백엔드 SensorDeviceDto 대응 (sensor-service)
+export interface SensorDeviceInfo {
+  deviceId: string;
+  deviceName?: string;
+  plantId?: number;
+  userId?: string;
+  active?: boolean;
+  threshold?: number;
+  duration?: number;
+  speciesCode?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // 백엔드 SensorDataDto 대응
 export interface SensorData {
   id?: number;
@@ -376,4 +468,29 @@ export interface PlantBookDetail extends PlantBookItem {
   sunlight?: string;
   humidity?: string;
   temperature?: string;
+}
+
+// 백엔드 GrowthLogDto 대응
+export interface GrowthLogItem {
+  logId: number;
+  plantId: number;
+  diagnosisId?: number;
+  title: string;
+  photoUrl?: string;
+  logDate?: string;           // LocalDate (YYYY-MM-DD)
+  content: string;
+  type?: string;
+  plantNickname?: string;
+  createDate?: string;
+  updateDate?: string;
+}
+
+// 백엔드 GrowthLogRequestDto 대응 (POST /growth-log/write body)
+export interface CreateGrowthLogDto {
+  plantId: number;
+  diagnosisId?: number;
+  title: string;
+  content: string;
+  type?: string;
+  logDate?: string;
 }

@@ -16,6 +16,8 @@ public class GrowthLogDto { // 관찰일지
     private String photoUrl;    // 관찰할 식물의 이미지
     private LocalDate logDate;  // 일지 쓴 날짜
     private String content;     // 일지 내용
+    private String type;        // 일지 분류 (성장 기록, 일상 관리, 물주기, 분갈이, 개화, 이상 증상 등)
+    private String plantNickname;   // 식물 별명 (화면 표시용)
     private String createDate;
     private String updateDate;
     private AIDiagnosisDto diagnosisDto;

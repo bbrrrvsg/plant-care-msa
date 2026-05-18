@@ -78,6 +78,14 @@ public class SensorDeviceService {
                 .collect(Collectors.toList());
     }
 
+    // 내 디바이스 목록 조회 (연결 + 미연결 모두 포함, 활성 디바이스만)
+    public List<SensorDeviceDto> getMyDevices(String userId) {
+        return sensorDeviceRepository.findByUserIdAndActive(userId, true)
+                .stream()
+                .map(SensorDeviceEntity::toDto)
+                .collect(Collectors.toList());
+    }
+
     // 물주기 정보로 threshold, duration 계산 후 저장
     @Transactional
     public void watering(String deviceId, Integer speciesCode) {

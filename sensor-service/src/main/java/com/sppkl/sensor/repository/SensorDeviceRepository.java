@@ -11,6 +11,9 @@ public interface SensorDeviceRepository extends JpaRepository<SensorDeviceEntity
     // 사용자의 전체 기기 목록 조회
     List<SensorDeviceEntity> findByUserId(String userId);
 
+    // 사용자의 활성 기기 목록 조회 (연결 + 미연결 모두 포함)
+    List<SensorDeviceEntity> findByUserIdAndActive(String userId, boolean active);
+
     // 미연결 + 활성화 기기 목록 조회 (앱에서 사용자에게 보여줄 목록)
     List<SensorDeviceEntity> findByPlantIdIsNullAndActiveTrue();
 
