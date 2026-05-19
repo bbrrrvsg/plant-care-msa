@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Platform, StatusBar, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Platform, StatusBar, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { ChevronLeft, Heart, Droplets, Sun, Thermometer, CloudRain, Plus, SquarePen } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
-import { bookApi, PlantBookDetail } from '../../services/api';
+import { bookApi, plantApi, getUserId, PlantBookDetail } from '../../services/api';
 const { width } = Dimensions.get('window');
 const CareCard = ({ icon, label, value }:any) => (
   <View style={s.careCard}><View style={s.careIcon}>{icon}</View><Text style={s.careLabel}>{label}</Text><Text style={s.careValue}>{value}</Text></View>
@@ -32,6 +32,44 @@ export function EncyclopediaDetail() {
     })();
     return () => { mounted = false; };
   }, [speciesCode]);
+
+  const handleDiaryPress = async () => {
+    if (!plant) return;
+
+    const userId = getUserId();
+    if (userId == null) {
+      Alert.alert('오류', '로그인이 필요해요.');
+      return;
+    }
+
+    try {
+      const myPlants = await plantApi.getMyPlants(userId);
+      const match = myPlants.find(
+        (p) => p.speciesCode != null && Number(p.speciesCode) === plant.speciesCode
+      );
+
+      if (match) {
+        navigation.navigate('DiaryWrite', { plantId: match.myPlantId });
+      } else {
+        Alert.alert(
+          '식물 등록 필요',
+          `${plant.plantName}이(가) 아직 등록되어 있지 않아요. 먼저 등록할까요?`,
+          [
+            { text: '취소', style: 'cancel' },
+            {
+              text: '등록하러 가기',
+              onPress: () => navigation.navigate('AddPlant', {
+                speciesCode: plant.speciesCode,
+                plantName: plant.plantName,
+              }),
+            },
+          ]
+        );
+      }
+    } catch (e) {
+      Alert.alert('오류', e instanceof Error ? e.message : '식물 정보를 가져오지 못했어요.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -96,10 +134,16 @@ export function EncyclopediaDetail() {
             </View>
           </View>
           <View style={s.actionContainer}>
-            <TouchableOpacity style={s.primaryBtn} onPress={()=>navigation.navigate('AddPlant')}>
+            <TouchableOpacity
+              style={s.primaryBtn}
+              onPress={()=>navigation.navigate('AddPlant', {
+                speciesCode: plant.speciesCode,
+                plantName: plant.plantName,
+              })}
+            >
               <Plus color="#ffffff" size={20}/><Text style={s.primaryBtnText}>내 식물로 등록하기</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.secondaryBtn} onPress={()=>navigation.navigate('DiaryWrite')}>
+            <TouchableOpacity style={s.secondaryBtn} onPress={handleDiaryPress}>
               <SquarePen color="#3a7d44" size={18}/><Text style={s.secondaryBtnText}>성장 기록 쓰기</Text>
             </TouchableOpacity>
           </View>

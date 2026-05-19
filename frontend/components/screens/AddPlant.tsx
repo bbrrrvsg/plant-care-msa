@@ -4,15 +4,18 @@ import {
   SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, StatusBar,
   Alert, ActivityIndicator,
 } from 'react-native';
-import { ArrowLeft, Upload } from 'lucide-react-native';
+import { ArrowLeft, Upload, BookOpen } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 import { plantApi, getUserId } from '../../services/api';
 
 export function AddPlant() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddPlant'>>();
+  const prefilledSpeciesCode = route.params?.speciesCode;
+  const prefilledPlantName = route.params?.plantName;
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [plantName, setPlantName] = useState('');
   const [location, setLocation] = useState('');
@@ -71,6 +74,18 @@ export function AddPlant() {
 
       <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+
+          {prefilledSpeciesCode && prefilledPlantName && (
+            <View style={styles.prefilledCard}>
+              <View style={styles.prefilledIcon}>
+                <BookOpen color="#3a7d44" size={20} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.prefilledLabel}>도감에서 선택한 식물</Text>
+                <Text style={styles.prefilledName}>{prefilledPlantName}</Text>
+              </View>
+            </View>
+          )}
 
           {/* Photo Upload */}
           <View style={styles.inputGroup}>
@@ -180,4 +195,33 @@ const styles = StyleSheet.create({
   },
   submitButtonDisabled: { backgroundColor: '#9CA3AF' },
   submitButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  prefilledCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  prefilledIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prefilledLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  prefilledName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#3a7d44',
+  },
 });

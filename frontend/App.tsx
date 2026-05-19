@@ -45,7 +45,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   PlantDetail: { plantId: number };
-  AddPlant: undefined;
+  AddPlant: { speciesCode?: number; plantName?: string } | undefined;
   SensorDashboard: { plantId: number };
   Notifications: undefined;
   Settings: undefined;
