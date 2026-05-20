@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "PlantCare",
+    "slug": "plant-care-rn",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.sppkl.plantcare"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "식물 진단을 위해 카메라 접근이 필요합니다.",
+          "mediaLibraryPermission": "식물 사진 업로드를 위해 갤러리 접근이 필요합니다."
+        }
+      ],
+      "expo-secure-store"
+    ]
+  }
+}
