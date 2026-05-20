@@ -351,6 +351,15 @@ export const growthLogApi = {
     }),
 };
 
+// 🌤️ 날씨 위젯 API — plant-service의 /weather/widget 라우트
+export const weatherApi = {
+  getWidget: (lat: number, lon: number) =>
+    request<WeatherWidgetResponse>({
+      url: `/weather/widget?lat=${lat}&lon=${lon}`,
+      method: 'GET',
+    }),
+};
+
 export const aiApi = {
   async diagnose(imageUri: string, plantId?: number): Promise<DiagnosisResult> {
     const filename = imageUri.split('/').pop() || 'plant.jpg';
@@ -493,4 +502,12 @@ export interface CreateGrowthLogDto {
   content: string;
   type?: string;
   logDate?: string;
+}
+
+// 백엔드 WeatherWidgetResponse 대응 (plant-service)
+export interface WeatherWidgetResponse {
+  temperature: number;
+  condition: string;
+  humidity?: number | null;
+  adviceTip: string;
 }

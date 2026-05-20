@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Platform, StatusBar, ActivityIndicator,
@@ -9,7 +9,10 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabParamList, RootStackParamList } from '../../App';
 import { PlantCard } from '../shared/PlantCard';
-import { getNickname, plantApi, MyPlantItem, getUserId } from '../../services/api';
+import {
+  getNickname, plantApi, MyPlantItem, getUserId,
+  weatherApi, WeatherWidgetResponse,
+} from '../../services/api';
 
 type HomeNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
@@ -25,6 +28,23 @@ export function Home() {
   const [myPlants, setMyPlants] = useState<MyPlantItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [weather, setWeather] = useState<WeatherWidgetResponse | null>(null);
+
+  // TODO: expo-location으로 실제 사용자 좌표를 받아오도록 교체 (현재는 서울 시청 고정)
+  useEffect(() => {
+    let cancelled = false;
+    weatherApi
+      .getWidget(37.5665, 126.978)
+      .then((data) => {
+        if (!cancelled) setWeather(data);
+      })
+      .catch((err) => {
+        console.warn('날씨 위젯을 불러오지 못했습니다:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchMyPlants = useCallback(async (cancelledRef?: { current: boolean }) => {
     setIsLoading(true);
@@ -111,11 +131,13 @@ export function Home() {
           <View style={styles.weatherWidget}>
             <View style={styles.weatherIconContainer}>
               <CloudRain color="#2E7D32" size={40} strokeWidth={1.8} />
-              <Text style={styles.temperature}>22°C</Text>
+              <Text style={styles.temperature}>
+                {weather ? `${Math.round(weather.temperature)}°C` : '--°C'}
+              </Text>
             </View>
             <View style={styles.weatherTextContainer}>
               <Text style={styles.weatherText}>
-                오늘은 하루 종일 비가 와요. 식물의 과습 상태를 확인해 주세요.
+                {weather?.adviceTip ?? '오늘도 식물들과 함께 상큼한 하루 보내세요! 🌿'}
               </Text>
             </View>
           </View>
