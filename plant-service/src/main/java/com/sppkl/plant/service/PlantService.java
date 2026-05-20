@@ -2,6 +2,7 @@ package com.sppkl.plant.service;
 
 import com.sppkl.common.dto.BookDto;
 import com.sppkl.common.dto.SensorDataDto;
+import com.sppkl.plant.Entity.BookEntity;
 import com.sppkl.plant.Entity.PlantEntity;
 import com.sppkl.plant.client.SensorClient;
 import com.sppkl.plant.client.AiServiceClient;
@@ -42,11 +43,18 @@ public class PlantService {
         return sensorClient.getSensorDataByPlantId(plantId);
     }
 
+    // speciesCode null-safe 조회 (도감 미매핑 식물 대응)
+    private BookEntity findBookOrNull(Integer speciesCode) {
+        return speciesCode != null
+                ? bookRepository.findById(speciesCode).orElse(null)
+                : null;
+    }
+
     // 내 식물 전체 조회
     public List<PlantResponseDto> getMyPlants(String userId) {
         return plantRepository.findByUserId(userId)
                 .stream()
-                .map(entity -> entity.toDto(bookRepository.findById(entity.getSpeciesCode()).orElse(null)))
+                .map(entity -> entity.toDto(findBookOrNull(entity.getSpeciesCode())))
                 .collect(Collectors.toList());
     }
 
@@ -54,7 +62,7 @@ public class PlantService {
     public PlantResponseDto getMyPlant(Integer myPlantId) {
         PlantEntity entity = plantRepository.findById(myPlantId)
                 .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
-        return entity.toDto(bookRepository.findById(entity.getSpeciesCode()).orElse(null));
+        return entity.toDto(findBookOrNull(entity.getSpeciesCode()));
     }
 
     // 내 식물 등록
@@ -79,7 +87,7 @@ public class PlantService {
             sensorClient.linkDevice(dto.getDeviceId(), linkBody);
         }
 
-        return saved.toDto(bookRepository.findById(saved.getSpeciesCode()).orElse(null));
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }
 
     // 내 식물 수정
@@ -90,7 +98,7 @@ public class PlantService {
         entity.setNickname(dto.getNickname());
         entity.setLocation(dto.getLocation());
         PlantEntity saved = plantRepository.save(entity);
-        return saved.toDto(bookRepository.findById(saved.getSpeciesCode()).orElse(null));
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }
 
     // 내 식물 삭제

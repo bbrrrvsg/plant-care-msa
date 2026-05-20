@@ -215,6 +215,7 @@ export const plantApi = {
     userId: number;
     nickname: string;
     location?: string;
+    speciesCode?: number;
     deviceId?: string;
     deviceName?: string;
     imageUri?: string;
@@ -223,6 +224,7 @@ export const plantApi = {
     formData.append('userId', String(params.userId));
     formData.append('nickname', params.nickname);
     if (params.location) formData.append('location', params.location);
+    if (params.speciesCode != null) formData.append('speciesCode', String(params.speciesCode));
     if (params.deviceId) formData.append('deviceId', params.deviceId);
     if (params.deviceName) formData.append('deviceName', params.deviceName);
 

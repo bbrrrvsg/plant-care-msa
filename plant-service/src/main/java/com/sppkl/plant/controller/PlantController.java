@@ -58,6 +58,7 @@ public class PlantController {
             @RequestParam("userId") String userId,
             @RequestParam("nickname") String nickname,
             @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "speciesCode", required = false) Integer speciesCode,
             @RequestParam(value = "deviceId", required = false) String deviceId,
             @RequestParam(value = "deviceName", required = false) String deviceName,
             @RequestPart(value = "image", required = false) MultipartFile image) {
@@ -66,6 +67,7 @@ public class PlantController {
                 .userId(userId)
                 .nickname(nickname)
                 .location(location)
+                .speciesCode(speciesCode)
                 .deviceId(deviceId)
                 .deviceName(deviceName)
                 .build();
