@@ -2,8 +2,8 @@ import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE || 'http://192.168.68.59:8080';
-const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB || 'http://localhost:8080';
+const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE;
+const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB;
 
 
 const BASE_URL = Platform.OS === 'web' ? WEB_BASE_URL : DEVICE_BASE_URL;
