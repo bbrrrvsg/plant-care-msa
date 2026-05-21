@@ -253,6 +253,12 @@ export const plantApi = {
 // plant-service의 도감 API: 응답 래퍼 없이 DTO/배열을 그대로 반환한다고 가정.
 export const bookApi = {
   getAll: () => request<PlantBookItem[]>({ url: '/book', method: 'GET' }),
+  // 카테고리: 'all' | 'beginner' | 'succulent' | 'foliage' | 'flower_fruit'
+  getByCategory: (category: string) =>
+    request<PlantBookItem[]>({
+      url: `/book?category=${encodeURIComponent(category)}`,
+      method: 'GET',
+    }),
   search: (name: string) =>
     request<PlantBookItem[]>({
       url: `/book/search?name=${encodeURIComponent(name)}`,

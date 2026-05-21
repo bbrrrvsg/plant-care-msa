@@ -13,3 +13,8 @@ perenual.api.key=${PERENUAL_API_KEY:}
 nongsaro.api.key=${NONGSARO_API_KEY:}
 # OpenWeatherMap API 키 (비어있으면 Mock 데이터 반환)
 openweather.api.key=${OPENWEATHER_API_KEY:}
+
+# 도감 데이터 강제 재로딩 플래그
+# true로 설정 후 1회 부팅하면 plant_book 테이블을 농사로 API에서 다시 받아 덮어씁니다.
+# (스키마 변경 등으로 기존 row를 갱신해야 할 때만 켜고, 끝나면 false로 되돌릴 것)
+plant.book.reload=false
