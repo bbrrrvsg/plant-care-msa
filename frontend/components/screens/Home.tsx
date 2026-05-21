@@ -122,7 +122,8 @@ export function Home() {
 
         <View style={styles.mainContent}>
           <View style={styles.greetingSection}>
-            <Text style={styles.greetingTitle}>환영합니다, {nickname}님</Text>
+            <Text style={styles.greetingWelcome}>환영합니다,</Text>
+            <Text style={styles.greetingName}>{nickname}님</Text>
             <Text style={styles.greetingSubtitle}>
               오늘 돌볼 식물이 {myPlants.length}개 있어요.
             </Text>
@@ -223,9 +224,23 @@ const styles = StyleSheet.create({
   },
   profileImage: { width: '100%', height: '100%' },
   mainContent: { padding: 16 },
-  greetingSection: { marginBottom: 16 },
-  greetingTitle: { fontSize: 24, fontWeight: '700', color: '#2E7D32', lineHeight: 32 },
-  greetingSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 4 },
+  greetingSection: { marginBottom: 20 },
+  greetingWelcome: {
+    fontSize: 60,
+    fontWeight: '800',
+    color: '#2E7D32',
+    lineHeight: 66,
+    letterSpacing: -1,
+  },
+  greetingName: {
+    fontSize: 36,
+    fontWeight: '500',
+    color: '#3a7d44',
+    lineHeight: 42,
+    marginTop: 2,
+    opacity: 0.9,
+  },
+  greetingSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 10 },
   weatherWidget: {
     flexDirection: 'row',
     backgroundColor: '#F1F8E9',

@@ -155,10 +155,10 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 - [x] **센서 등록 후 → 기기 관리 동선 추가** — `SensorRegister.tsx` complete 단계에 "기기 관리로 이동" 보조 버튼 추가 + `SensorDashboard` 상단에 Settings 아이콘으로 SensorDevices 진입점 추가
 - [x] **도감 카테고리 필터 동작화** — 농사로 코드 컬럼 추가 방식(큰 스코프). `BookEntity`에 `clCode`/`grwhstleCode`/`managelevelCode` 추가, `DataLoader`에 `plant.book.reload` 플래그 도입, `BookService.getBooksByCategory()`로 5개 카테고리(전체/초보자용/다육식물/관엽식물/꽃·열매) 분기. `PlantEncyclopedia.tsx`는 FlatList + 반응형 컬럼(2~5)으로 재구성
 - [x] **일지 삭제 UI** — `GrowthDiary.tsx` 카드 우하단에 삭제 버튼 + 중앙 확인 모달. 낙관적 갱신, 실패 시 `Alert.alert` 폴백
+- [x] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다,"(60px/800)와 "{nickname}님"(36px/500)을 두 줄로 분리, 크기·굵기·opacity로 위계 차이 부여
 
 ### P0 (UX 누락 — 시연 전 필수)
 
-- [ ] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다," 텍스트를 현재의 약 2.5배, "(사용자)님" 텍스트를 약 1.5배로 키우되 둘 사이에 위계 차이를 둘 것. 현재 글자가 너무 작아 화면 진입 시 인상이 약함
 - [ ] **식물도감 추천검색어** — `PlantEncyclopedia.tsx` 검색바에 자동완성/추천 칩 표시. 후보:
   - (가벼움) 인기 검색어 N개 하드코딩 또는 도감에서 무작위 샘플
   - (제대로) `book` 테이블에서 plantName prefix 매칭 (백엔드 `/book/search?name=...&limit=N` 활용 또는 새 엔드포인트)
