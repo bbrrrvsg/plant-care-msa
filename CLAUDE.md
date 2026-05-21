@@ -150,13 +150,32 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ## 남은 작업 TODO
 
+### ✅ 완료 (2026-05-21)
+
+- [x] **센서 등록 후 → 기기 관리 동선 추가** — `SensorRegister.tsx` complete 단계에 "기기 관리로 이동" 보조 버튼 추가 + `SensorDashboard` 상단에 Settings 아이콘으로 SensorDevices 진입점 추가
+- [x] **도감 카테고리 필터 동작화** — 농사로 코드 컬럼 추가 방식(큰 스코프). `BookEntity`에 `clCode`/`grwhstleCode`/`managelevelCode` 추가, `DataLoader`에 `plant.book.reload` 플래그 도입, `BookService.getBooksByCategory()`로 5개 카테고리(전체/초보자용/다육식물/관엽식물/꽃·열매) 분기. `PlantEncyclopedia.tsx`는 FlatList + 반응형 컬럼(2~5)으로 재구성
+- [x] **일지 삭제 UI** — `GrowthDiary.tsx` 카드 우하단에 삭제 버튼 + 중앙 확인 모달. 낙관적 갱신, 실패 시 `Alert.alert` 폴백
+
 ### P0 (UX 누락 — 시연 전 필수)
 
-- [ ] **센서 등록 후 → 기기 관리 동선 추가** — `SensorRegister.tsx` complete 단계(line 329~358)에 "센서 대시보드로 이동" 버튼만 존재. "기기 관리로 이동" 보조 버튼 추가하거나, `SensorDashboard` 상단에 "기기 관리(SensorDevices)" 진입점 추가. (해제 모달 자체는 [SensorDevices.tsx:188-208](frontend/components/screens/SensorDevices.tsx#L188-L208)에서 이미 동작 중)
-- [ ] **도감 카테고리 필터 동작화** — `PlantEncyclopedia.tsx:67-71` 칩 클릭 시 `setCat`만 호출되고 실제 필터링 로직 없음. **선행 조사 필요**: 칩 라벨(초보자용/다육식물/관엽식물/꽃·열매/공기정화)은 현재 `BookEntity`에 매핑되는 컬럼이 없음 (`careLevel`만 존재). 둘 중 하나 선택:
-  - (작은 스코프 / 시연용) "초보자용"만 `careLevel` 기준으로 우선 구현, 나머지 칩은 비활성화 또는 보류 — 한 화면에 한 카테고리씩 백엔드 호출하도록 `bookApi.getAll()` → `bookApi.getByCategory(careLevel)`로 분기
-  - (큰 스코프) 농사로 API 응답에 분류 필드가 있는지 먼저 확인 → 있으면 `BookEntity`에 `category` 컬럼 추가 + `DataLoader`에서 매핑 로직 작성 → `BookController`에 `?category=` 파라미터 추가
-- [ ] **일지 삭제 UI** — 백엔드/프론트 API는 모두 준비됨([GrowthLogController.java:56-59](plant-service/src/main/java/com/sppkl/plant/controller/GrowthLogController.java#L56-L59), [api.ts:349](frontend/services/api.ts#L349) `growthLogApi.delete`). `GrowthDiary.tsx` 항목 카드에 삭제 버튼/스와이프 + 확인 모달만 붙이면 됨
+- [ ] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다," 텍스트를 현재의 약 2.5배, "(사용자)님" 텍스트를 약 1.5배로 키우되 둘 사이에 위계 차이를 둘 것. 현재 글자가 너무 작아 화면 진입 시 인상이 약함
+- [ ] **식물도감 추천검색어** — `PlantEncyclopedia.tsx` 검색바에 자동완성/추천 칩 표시. 후보:
+  - (가벼움) 인기 검색어 N개 하드코딩 또는 도감에서 무작위 샘플
+  - (제대로) `book` 테이블에서 plantName prefix 매칭 (백엔드 `/book/search?name=...&limit=N` 활용 또는 새 엔드포인트)
+  - 빈 검색바 클릭 시 추천 칩 노출, 입력 중에는 prefix 매칭 결과로 전환
+- [ ] **성장 일지 상세 화면** — UI는 사용자가 제작 예정. 명세:
+  - 큰 히어로 이미지 + 날짜/시간/식물/유형 메타
+  - 메모 본문 (긴 글 가독성 — 줄간격/폭 신경)
+  - AI 진단 항목이면 신뢰도 바 + 권장사항 함께 표시 (`ai_diagnosis` 조인 필요, `growthLogApi.getDetail(logId, includeDiagnosis=true)` 사용)
+  - 같은 식물의 이전/다음 기록으로 좌우 스와이프 또는 화살표 이동
+  - 하단 액션: 수정 / 공유 / 삭제 (삭제는 `GrowthDiary`의 모달 재사용 가능)
+  - 네비게이션: `RootStackParamList`에 `GrowthDetail` 라우트 추가 (`logId` 파라미터), `GrowthDiary` 카드 탭 시 진입
+- [ ] **식물 "떠나보내기" + 추억 보관함** — 팀원 명칭 논의 후 진행. 단순 삭제 대신 감성적 흐름:
+  - 사유 선택(이사/분양/시들음/기타) + 마지막 한 마디 메모 + 함께한 기간/기록 수 요약 카드
+  - "추억 보관함" 탭으로 이동 (별도 화면, 사진·일지·일수 회상). 완전 삭제는 보관함에서 한 번 더
+  - 백엔드: `PlantEntity`에 `archivedAt`/`farewellReason`/`farewellMessage` 컬럼 추가 + `PATCH /plant/{id}/archive`. 보관함 조회는 `GET /plant?archived=true`
+  - 프론트: 마이페이지 하단에 "추억 보관함" 진입점, 평소엔 거슬리지 않게
+  - 향후 옵션: "잠시 쉬어가기"(일시 비활성, 여행/이사 분리) — 1차 스코프에서는 제외 권장
 - [ ] **사용자 프로필 이미지** — 현재 [Settings.tsx:130-132](frontend/components/screens/Settings.tsx#L130-L132)에 unsplash 외국인 사진이 하드코딩됨. 업로드 UI도 없음. 필요 작업:
   - 백엔드: `UserInfo` 엔티티에 `profileImageUrl` 컬럼 추가 + user-service에 multipart 업로드 엔드포인트(PATCH `/user/me/profile-image`) 추가 (또는 ai-service의 `ImageService`를 user-service로 이식)
   - 프론트: Settings 화면 아바타에 카메라 아이콘 + `ImagePicker` 연결, 기본 이미지는 외국인 사진 대신 식물/이니셜 placeholder로 교체
