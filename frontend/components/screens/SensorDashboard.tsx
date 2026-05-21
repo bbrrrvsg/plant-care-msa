@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   SafeAreaView, Platform, StatusBar, Animated, ActivityIndicator,
 } from 'react-native';
-import { ArrowLeft, Plus, Activity, Thermometer, Wind, Droplets, Sun } from 'lucide-react-native';
+import { ArrowLeft, Plus, Settings, Activity, Thermometer, Wind, Droplets, Sun } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
@@ -251,9 +251,14 @@ export function SensorDashboard() {
           <ArrowLeft color="#374151" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>실시간 센서</Text>
-        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SensorRegister')}>
-          <Plus color="#3a7d44" size={24} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SensorDevices')}>
+            <Settings color="#374151" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('SensorRegister')}>
+            <Plus color="#3a7d44" size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
