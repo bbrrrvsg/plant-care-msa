@@ -172,13 +172,7 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
   - (가벼움) 인기 검색어 N개 하드코딩 또는 도감에서 무작위 샘플
   - (제대로) `book` 테이블에서 plantName prefix 매칭 (백엔드 `/book/search?name=...&limit=N` 활용 또는 새 엔드포인트)
   - 빈 검색바 클릭 시 추천 칩 노출, 입력 중에는 prefix 매칭 결과로 전환
-- [ ] **성장 일지 상세 화면** — UI는 사용자가 제작 예정. 명세:
-  - 큰 히어로 이미지 + 날짜/시간/식물/유형 메타
-  - 메모 본문 (긴 글 가독성 — 줄간격/폭 신경)
-  - AI 진단 항목이면 신뢰도 바 + 권장사항 함께 표시 (`ai_diagnosis` 조인 필요, `growthLogApi.getDetail(logId, includeDiagnosis=true)` 사용)
-  - 같은 식물의 이전/다음 기록으로 좌우 스와이프 또는 화살표 이동
-  - 하단 액션: 수정 / 공유 / 삭제 (삭제는 `GrowthDiary`의 모달 재사용 가능)
-  - 네비게이션: `RootStackParamList`에 `GrowthDetail` 라우트 추가 (`logId` 파라미터), `GrowthDiary` 카드 탭 시 진입
+- [x] **성장 일지 상세 화면** (완료 2026-05-22) — [GrowthDetail.tsx](frontend/components/screens/GrowthDetail.tsx) 신설. `growthLogApi.getDetail(logId, includeDiagnosis=true)` 로드 → 히어로 이미지(탭 시 라이트박스 Modal) + 식물/날짜/시간/유형/AI 배지 메타 + AI 진단 박스(제목/소제목/디테일/권장사항 — 백엔드 `AIDiagnosisDto`에 confidence 필드 없어 신뢰도 바 대신 텍스트로 대체) + 메모 본문 + 같은 plantId logs로 이전/다음 카드(`navigation.replace('GrowthDetail', ...)`) + 하단 삭제 모달(`growthLogApi.delete`). 공유는 RN `Share.share` API. 라우트: `RootStackParamList.GrowthDetail: { logId }` 추가. 진입: `GrowthDiary.tsx` 카드 콘텐츠를 `TouchableOpacity`로 래핑, 삭제 버튼은 카드 풋터로 분리해 탭 충돌 방지. 수정 액션은 DiaryWrite가 신규 작성 전용이라 보류
 - [ ] **사용자 프로필 이미지** — 현재 [Settings.tsx:130-132](frontend/components/screens/Settings.tsx#L130-L132)에 unsplash 외국인 사진이 하드코딩됨. 업로드 UI도 없음. 필요 작업:
   - 백엔드: `UserInfo` 엔티티에 `profileImageUrl` 컬럼 추가 + user-service에 multipart 업로드 엔드포인트(PATCH `/user/me/profile-image`) 추가 (또는 ai-service의 `ImageService`를 user-service로 이식)
   - 프론트: Settings 화면 아바타에 카메라 아이콘 + `ImagePicker` 연결, 기본 이미지는 외국인 사진 대신 식물/이니셜 placeholder로 교체

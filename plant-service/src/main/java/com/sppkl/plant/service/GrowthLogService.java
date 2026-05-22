@@ -12,7 +12,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class GrowthLogService {
     private final GrowthLogRepository growthLogRepository;
     private final PlantRepository plantRepository;
     private final AiServiceClient aiServiceClient;
+    private final GrowthLogImageService growthLogImageService;
 
     // 일지 목록 (특정 식물)
     public List<GrowthLogDto> getPlantLogList(int userId){
@@ -63,17 +66,31 @@ public class GrowthLogService {
         return dto;
     }
 
-    // 일지 작성
+    // 일지 작성 (JSON)
     public GrowthLogDto logWrite(GrowthLogRequestDto requestDto) {
+        return logWrite(requestDto, null);
+    }
+
+    // 일지 작성 (multipart 이미지 첨부 지원)
+    public GrowthLogDto logWrite(GrowthLogRequestDto requestDto, MultipartFile image) {
         LocalDate logDate = requestDto.getLogDate() != null
                 ? requestDto.getLogDate()
                 : LocalDate.now();
+
+        String photoUrl = requestDto.getPhotoUrl();
+        if (image != null && !image.isEmpty()) {
+            try {
+                photoUrl = growthLogImageService.save(image);
+            } catch (IOException e) {
+                throw new RuntimeException("일지 사진 저장 실패: " + e.getMessage(), e);
+            }
+        }
 
         GrowthLogEntity entity = GrowthLogEntity.builder()
                 .plantId(requestDto.getPlantId())
                 .diagnosisId(requestDto.getDiagnosisId())
                 .title(requestDto.getTitle())
-                .photoUrl(requestDto.getPhotoUrl())
+                .photoUrl(photoUrl)
                 .logDate(logDate)
                 .content(requestDto.getContent())
                 .type(requestDto.getType())

@@ -60,9 +60,13 @@ public class GrowthLogEntity extends BaseTime {
         return GrowthLogDto.builder()
                 .logId(logId)
                 .plantId(plantId)
+                .diagnosisId(diagnosisId)
                 .title(title)
+                .photoUrl(photoUrl)
                 .logDate(logDate)
+                .content(content)
                 .type(type)
+                .createDate(getCreatedAt() != null ? getCreatedAt().toString() : null)
                 .build();
     }
 }

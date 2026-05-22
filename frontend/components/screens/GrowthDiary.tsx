@@ -2,15 +2,15 @@ import React, { useCallback, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Platform, StatusBar,
-  ActivityIndicator, RefreshControl, Modal, Alert,
+  ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Sprout, Sparkles, Plus, Trash2, AlertCircle } from 'lucide-react-native';
+import { Sprout, Sparkles, Plus } from 'lucide-react-native';
 import { useNavigation, CompositeNavigationProp, useFocusEffect } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabParamList, RootStackParamList } from '../../App';
-import { growthLogApi, getUserId, GrowthLogItem } from '../../services/api';
+import { growthLogApi, getUserId, GrowthLogItem, resolveAssetUrl } from '../../services/api';
 
 type GrowthDiaryNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Diary'>,
@@ -63,8 +63,6 @@ export function GrowthDiary() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<GrowthLogItem | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadEntries = useCallback(async () => {
     try {
@@ -102,21 +100,6 @@ export function GrowthDiary() {
   const onRefresh = () => {
     setRefreshing(true);
     loadEntries();
-  };
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    const target = pendingDelete;
-    setIsDeleting(true);
-    try {
-      await growthLogApi.delete(target.logId);
-      setEntries((prev) => prev.filter((e) => e.logId !== target.logId));
-      setPendingDelete(null);
-    } catch (e) {
-      Alert.alert('삭제 실패', e instanceof Error ? e.message : '일지를 삭제하지 못했어요.');
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const renderAddRow = () => (
@@ -188,7 +171,18 @@ export function GrowthDiary() {
                         </LinearGradient>
                       </View>
 
-                      <View style={styles.entryCard}>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => navigation.navigate('GrowthDetail', { logId: entry.logId })}
+                        style={styles.entryCard}
+                      >
+                        {entry.photoUrl ? (
+                          <Image
+                            source={{ uri: resolveAssetUrl(entry.photoUrl)! }}
+                            style={styles.cardPhoto}
+                            resizeMode="cover"
+                          />
+                        ) : null}
                         <View style={styles.entryContent}>
                           {entry.title ? (
                             <Text style={styles.entryTitle}>{entry.title}</Text>
@@ -219,19 +213,9 @@ export function GrowthDiary() {
                               )}
                             </View>
                           </View>
-                          <Text style={styles.entryNote}>{entry.content}</Text>
-                          <View style={styles.entryActions}>
-                            <TouchableOpacity
-                              style={styles.deleteBtn}
-                              onPress={() => setPendingDelete(entry)}
-                              accessibilityLabel="일지 삭제"
-                            >
-                              <Trash2 size={14} color="#DC2626" />
-                              <Text style={styles.deleteBtnText}>삭제</Text>
-                            </TouchableOpacity>
-                          </View>
+                          <Text style={styles.entryNote} numberOfLines={3}>{entry.content}</Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   );
                 })
@@ -242,47 +226,6 @@ export function GrowthDiary() {
           </View>
         </ScrollView>
       )}
-
-      <Modal
-        visible={pendingDelete !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => !isDeleting && setPendingDelete(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalIconCircle}>
-                <AlertCircle size={20} color="#DC2626" />
-              </View>
-              <Text style={styles.modalTitle}>일지를 삭제할까요?</Text>
-            </View>
-            <Text style={styles.modalBody}>
-              {pendingDelete?.title ? `"${pendingDelete.title}" ` : ''}기록을 삭제하면 되돌릴 수 없어요.
-            </Text>
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalCancelBtn]}
-                onPress={() => setPendingDelete(null)}
-                disabled={isDeleting}
-              >
-                <Text style={styles.modalCancelText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalConfirmBtn, isDeleting && { opacity: 0.6 }]}
-                onPress={confirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={styles.modalConfirmText}>삭제</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -308,6 +251,7 @@ const styles = StyleSheet.create({
   timelineDotGradient: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   timelineDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffffff' },
   entryCard: { backgroundColor: '#ffffff', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#F3F4F6', elevation: 2 },
+  cardPhoto: { width: '100%', aspectRatio: 4 / 3, backgroundColor: '#E5E7EB' },
   entryContent: { padding: 16 },
   entryTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 12 },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
@@ -323,19 +267,4 @@ const styles = StyleSheet.create({
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ffffff', paddingVertical: 16, borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: '#D1D5DB' },
   addIconCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(124,203,138,0.1)', alignItems: 'center', justifyContent: 'center' },
   addButtonText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
-  entryActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
-  deleteBtnText: { fontSize: 12, fontWeight: '600', color: '#DC2626' },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard: { width: '100%', maxWidth: 360, backgroundColor: '#ffffff', borderRadius: 16, padding: 20 },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  modalIconCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827', flexShrink: 1 },
-  modalBody: { fontSize: 14, color: '#4B5563', lineHeight: 20, marginBottom: 20 },
-  modalActions: { flexDirection: 'row', gap: 8 },
-  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  modalCancelBtn: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#E5E7EB' },
-  modalCancelText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  modalConfirmBtn: { backgroundColor: '#DC2626' },
-  modalConfirmText: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
 });

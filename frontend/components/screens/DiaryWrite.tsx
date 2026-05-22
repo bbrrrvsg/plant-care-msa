@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   SafeAreaView, KeyboardAvoidingView, Platform, Alert, StatusBar,
-  ActivityIndicator,
+  ActivityIndicator, Image,
 } from 'react-native';
-import { ArrowLeft, Leaf, Check } from 'lucide-react-native';
+import { ArrowLeft, Leaf, Check, Camera, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
@@ -33,9 +34,27 @@ export function DiaryWrite() {
   const [type, setType] = useState(entryTypes[0].id);
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요해요.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -81,12 +100,15 @@ export function DiaryWrite() {
     setSubmitError(null);
 
     try {
-      await growthLogApi.write({
-        plantId: selectedPlantId,
-        title: finalTitle,
-        content: note,
-        type: selectedTypeLabel,
-      });
+      await growthLogApi.writeWithImage(
+        {
+          plantId: selectedPlantId,
+          title: finalTitle,
+          content: note,
+          type: selectedTypeLabel,
+        },
+        imageUri,
+      );
 
       Alert.alert('성공', '기록이 저장되었습니다.', [
         {
@@ -114,6 +136,35 @@ export function DiaryWrite() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView style={s.container} contentContainerStyle={s.scroll}>
+
+          {/* 사진 */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>사진</Text>
+            {imageUri ? (
+              <View style={s.photoPreviewWrap}>
+                <Image source={{ uri: imageUri }} style={s.photoPreview} />
+                <TouchableOpacity
+                  style={s.photoRemoveBtn}
+                  onPress={() => setImageUri(null)}
+                  accessibilityLabel="사진 제거"
+                >
+                  <X color="#ffffff" size={16} />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.photoChangeBtn} onPress={pickImage}>
+                  <Camera color="#ffffff" size={14} />
+                  <Text style={s.photoChangeText}>변경</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={s.photoEmpty} onPress={pickImage} activeOpacity={0.85}>
+                <View style={s.photoIconCircle}>
+                  <Camera color="#3a7d44" size={22} />
+                </View>
+                <Text style={s.photoEmptyTitle}>오늘의 식물 모습 담기</Text>
+                <Text style={s.photoEmptyHint}>JPG, PNG 최대 10MB</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* 제목 (선택) */}
           <View style={s.section}>
@@ -214,7 +265,6 @@ export function DiaryWrite() {
             </View>
           </View>
 
-          <Text style={s.hint}>* 사진 업로드는 추후 지원됩니다.</Text>
         </ScrollView>
 
         <View style={s.bottomBar}>
@@ -279,4 +329,35 @@ const s = StyleSheet.create({
   submitBtn: { backgroundColor: '#2d5a27', paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   submitDisabled: { backgroundColor: '#E5E7EB' },
   submitText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+
+  // 사진 섹션
+  photoEmpty: {
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 32, paddingHorizontal: 16,
+    backgroundColor: '#F9FAFB', borderRadius: 20,
+    borderWidth: 2, borderStyle: 'dashed', borderColor: '#D1D5DB',
+  },
+  photoIconCircle: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: 'rgba(124,203,138,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4,
+  },
+  photoEmptyTitle: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  photoEmptyHint: { fontSize: 12, color: '#7CCB8A', fontWeight: '500' },
+  photoPreviewWrap: { position: 'relative', borderRadius: 20, overflow: 'hidden', backgroundColor: '#E5E7EB' },
+  photoPreview: { width: '100%', aspectRatio: 4 / 3 },
+  photoRemoveBtn: {
+    position: 'absolute', top: 10, right: 10,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  photoChangeBtn: {
+    position: 'absolute', bottom: 10, right: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  photoChangeText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
 });

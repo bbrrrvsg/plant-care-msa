@@ -28,6 +28,7 @@ import { SensorDevices } from './components/screens/SensorDevices';
 import { SensorRegister } from './components/screens/SensorRegister';
 import { PlantFarewell } from './components/screens/PlantFarewell';
 import { MemorialArchive } from './components/screens/MemorialArchive';
+import { GrowthDetail } from './components/screens/GrowthDetail';
 
 import { Colors, FontSize, Spacing } from './theme';
 
@@ -53,6 +54,7 @@ export type RootStackParamList = {
   Settings: undefined;
   EncyclopediaDetail: { speciesCode: number };
   DiaryWrite: { plantId?: number } | undefined;
+  GrowthDetail: { logId: number };
   SensorDevices: undefined;
   SensorRegister: { plantId?: string } | undefined;
   PlantFarewell: {
@@ -147,6 +149,7 @@ export default function App() {
           <Stack.Screen name="Settings" component={Settings} />
           <Stack.Screen name="EncyclopediaDetail" component={EncyclopediaDetail} />
           <Stack.Screen name="DiaryWrite" component={DiaryWrite} />
+          <Stack.Screen name="GrowthDetail" component={GrowthDetail} />
           <Stack.Screen name="SensorDevices" component={SensorDevices} />
           <Stack.Screen name="SensorRegister" component={SensorRegister} />
           <Stack.Screen name="PlantFarewell" component={PlantFarewell} />
