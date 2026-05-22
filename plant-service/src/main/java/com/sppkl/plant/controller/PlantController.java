@@ -3,6 +3,7 @@ package com.sppkl.plant.controller;
 
 import com.sppkl.common.dto.SensorDataDto;
 import com.sppkl.plant.client.SensorClient;
+import com.sppkl.plant.dto.PlantArchiveRequestDto;
 import com.sppkl.plant.dto.PlantRequestDto;
 import com.sppkl.plant.dto.PlantResponseDto;
 import com.sppkl.plant.service.PlantService;
@@ -40,10 +41,14 @@ public class PlantController {
         return ResponseEntity.ok(plantService.getPlantIdsByUserId(userId));
     }
 
-    // 내 식물 전체 조회
+    // 내 식물 전체 조회 (archived=true 시 추억 보관함)
     @GetMapping
-    public ResponseEntity<List<PlantResponseDto>> getMyPlants(@RequestParam String userId) {
-        return ResponseEntity.ok(plantService.getMyPlants(userId));
+    public ResponseEntity<List<PlantResponseDto>> getMyPlants(
+            @RequestParam String userId,
+            @RequestParam(required = false, defaultValue = "false") boolean archived) {
+        return ResponseEntity.ok(archived
+                ? plantService.getMemorialPlants(userId)
+                : plantService.getMyPlants(userId));
     }
 
     // 내 식물 단건 조회
@@ -83,7 +88,15 @@ public class PlantController {
         return ResponseEntity.ok(plantService.updateMyPlant(myPlantId, dto));
     }
 
-    // 내 식물 삭제
+    // 식물 떠나보내기 (소프트 삭제 → 추억 보관함)
+    @PatchMapping("/{myPlantId}/archive")
+    public ResponseEntity<PlantResponseDto> archivePlant(
+            @PathVariable Integer myPlantId,
+            @RequestBody PlantArchiveRequestDto dto) {
+        return ResponseEntity.ok(plantService.archivePlant(myPlantId, dto.getReason(), dto.getMessage()));
+    }
+
+    // 내 식물 삭제 (보관함에서 완전 삭제 시에도 사용)
     @DeleteMapping("/{myPlantId}")
     public ResponseEntity<Void> deleteMyPlant(@PathVariable Integer myPlantId) {
         plantService.deleteMyPlant(myPlantId);

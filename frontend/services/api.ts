@@ -248,6 +248,17 @@ export const plantApi = {
     request<MyPlantItem>({ url: `/plant/${myPlantId}`, method: 'PUT', data }),
   delete: (myPlantId: number) =>
     request<void>({ url: `/plant/${myPlantId}`, method: 'DELETE' }),
+  archive: (myPlantId: number, data: { reason: string; message: string }) =>
+    request<MyPlantItem>({
+      url: `/plant/${myPlantId}/archive`,
+      method: 'PATCH',
+      data,
+    }),
+  getMemorials: (userId: number) =>
+    request<MyPlantItem[]>({
+      url: `/plant?userId=${userId}&archived=true`,
+      method: 'GET',
+    }),
 };
 
 // plant-service의 도감 API: 응답 래퍼 없이 DTO/배열을 그대로 반환한다고 가정.
@@ -426,6 +437,9 @@ export interface MyPlantItem {
   deviceId?: string;
   registeredAt?: string;
   lastWatered?: string;
+  archivedAt?: string;            // null이면 활성, 값 있으면 추억 보관함
+  farewellReason?: string;        // moved | rehomed | withered | other
+  farewellMessage?: string;
   createdAt: string;
   updatedAt?: string;
 }

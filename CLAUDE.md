@@ -157,6 +157,15 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 - [x] **일지 삭제 UI** — `GrowthDiary.tsx` 카드 우하단에 삭제 버튼 + 중앙 확인 모달. 낙관적 갱신, 실패 시 `Alert.alert` 폴백
 - [x] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다,"(60px/800)와 "{nickname}님"(36px/500)을 두 줄로 분리, 크기·굵기·opacity로 위계 차이 부여
 
+### ✅ 완료 (2026-05-22)
+
+- [x] **식물 "떠나보내기" + 추억 보관함** — 단순 하드 삭제 대신 소프트 삭제 + 감성 플로우.
+  - 백엔드: `PlantEntity`에 `archivedAt`/`farewellReason`/`farewellMessage` 컬럼, `PlantArchiveRequestDto` 신규, `PATCH /plant/{id}/archive` 엔드포인트, `GET /plant?archived=true` 분기. `getMyPlants`는 활성 식물(archivedAt IS NULL)만 반환하도록 `findByUserIdAndArchivedAtIsNull` 사용. archive 시 연결된 deviceId는 자동 unlink
+  - 프론트엔드 `PlantFarewell.tsx`: 4단계 플로우(intro → reason → message → ceremony → done). 꽃잎 낙하 + 이미지 펄스 애니메이션은 RN `Animated` API, 의식 단계에서 archive API 호출. `CommonActions.reset`으로 보관함/홈으로 점프
+  - 프론트엔드 `MemorialArchive.tsx`: `plantApi.getMemorials()` 호출, FlatList + 상세 모달 + 완전 삭제 재확인 모달(두 Modal 동시 불가 → 상세 닫고 확인 모달 띄움)
+  - 진입점: `PlantDetail.tsx` 하단 "이 식물을 떠나보내기" 카드(센서 설정 아래, 톤 다운), `Settings.tsx` "추억" 섹션의 "추억 보관함"
+  - 향후 옵션: "잠시 쉬어가기"(일시 비활성) — 보류
+
 ### P0 (UX 누락 — 시연 전 필수)
 
 - [ ] **식물도감 추천검색어** — `PlantEncyclopedia.tsx` 검색바에 자동완성/추천 칩 표시. 후보:
@@ -170,12 +179,6 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
   - 같은 식물의 이전/다음 기록으로 좌우 스와이프 또는 화살표 이동
   - 하단 액션: 수정 / 공유 / 삭제 (삭제는 `GrowthDiary`의 모달 재사용 가능)
   - 네비게이션: `RootStackParamList`에 `GrowthDetail` 라우트 추가 (`logId` 파라미터), `GrowthDiary` 카드 탭 시 진입
-- [ ] **식물 "떠나보내기" + 추억 보관함** — 팀원 명칭 논의 후 진행. 단순 삭제 대신 감성적 흐름:
-  - 사유 선택(이사/분양/시들음/기타) + 마지막 한 마디 메모 + 함께한 기간/기록 수 요약 카드
-  - "추억 보관함" 탭으로 이동 (별도 화면, 사진·일지·일수 회상). 완전 삭제는 보관함에서 한 번 더
-  - 백엔드: `PlantEntity`에 `archivedAt`/`farewellReason`/`farewellMessage` 컬럼 추가 + `PATCH /plant/{id}/archive`. 보관함 조회는 `GET /plant?archived=true`
-  - 프론트: 마이페이지 하단에 "추억 보관함" 진입점, 평소엔 거슬리지 않게
-  - 향후 옵션: "잠시 쉬어가기"(일시 비활성, 여행/이사 분리) — 1차 스코프에서는 제외 권장
 - [ ] **사용자 프로필 이미지** — 현재 [Settings.tsx:130-132](frontend/components/screens/Settings.tsx#L130-L132)에 unsplash 외국인 사진이 하드코딩됨. 업로드 UI도 없음. 필요 작업:
   - 백엔드: `UserInfo` 엔티티에 `profileImageUrl` 컬럼 추가 + user-service에 multipart 업로드 엔드포인트(PATCH `/user/me/profile-image`) 추가 (또는 ai-service의 `ImageService`를 user-service로 이식)
   - 프론트: Settings 화면 아바타에 카메라 아이콘 + `ImagePicker` 연결, 기본 이미지는 외국인 사진 대신 식물/이니셜 placeholder로 교체

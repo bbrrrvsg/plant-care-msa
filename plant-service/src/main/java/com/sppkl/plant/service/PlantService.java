@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,9 +51,17 @@ public class PlantService {
                 : null;
     }
 
-    // 내 식물 전체 조회
+    // 내 식물 전체 조회 (보관함 제외)
     public List<PlantResponseDto> getMyPlants(String userId) {
-        return plantRepository.findByUserId(userId)
+        return plantRepository.findByUserIdAndArchivedAtIsNull(userId)
+                .stream()
+                .map(entity -> entity.toDto(findBookOrNull(entity.getSpeciesCode())))
+                .collect(Collectors.toList());
+    }
+
+    // 추억 보관함 조회 (떠나보낸 식물)
+    public List<PlantResponseDto> getMemorialPlants(String userId) {
+        return plantRepository.findByUserIdAndArchivedAtIsNotNullOrderByArchivedAtDesc(userId)
                 .stream()
                 .map(entity -> entity.toDto(findBookOrNull(entity.getSpeciesCode())))
                 .collect(Collectors.toList());
@@ -97,6 +106,30 @@ public class PlantService {
                 .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
         entity.setNickname(dto.getNickname());
         entity.setLocation(dto.getLocation());
+        PlantEntity saved = plantRepository.save(entity);
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
+    }
+
+    // 식물 떠나보내기 (소프트 삭제: archived_at 세팅, 연결 기기 해제)
+    @Transactional
+    public PlantResponseDto archivePlant(Integer myPlantId, String reason, String message) {
+        PlantEntity entity = plantRepository.findById(myPlantId)
+                .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
+
+        if (entity.getArchivedAt() != null) {
+            throw new RuntimeException("이미 떠나보낸 식물입니다.");
+        }
+
+        // 연결된 기기가 있으면 센서 서비스에 연결 해제 요청 (deleteMyPlant와 동일 패턴)
+        if (entity.getDeviceId() != null) {
+            sensorClient.unlinkDevice(entity.getDeviceId());
+            entity.setDeviceId(null);
+        }
+
+        entity.setArchivedAt(LocalDateTime.now());
+        entity.setFarewellReason(reason);
+        entity.setFarewellMessage(message);
+
         PlantEntity saved = plantRepository.save(entity);
         return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }

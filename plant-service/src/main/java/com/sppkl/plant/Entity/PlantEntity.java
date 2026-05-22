@@ -27,6 +27,15 @@ public class PlantEntity extends BaseTime{
     @Column(name = "last_watered")
     private LocalDateTime lastWatered;
 
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
+    @Column(name = "farewell_reason", length = 32)
+    private String farewellReason;
+
+    @Column(name = "farewell_message", columnDefinition = "TEXT")
+    private String farewellMessage;
+
     // Entity -> DTO (BookEntity에서 식물 이름, 이미지 가져옴)
     public PlantResponseDto toDto(BookEntity book) {
         return PlantResponseDto.builder()
@@ -40,6 +49,9 @@ public class PlantEntity extends BaseTime{
                 .deviceId(deviceId)
                 .registeredAt(getCreatedAt())
                 .lastWatered(lastWatered)
+                .archivedAt(archivedAt)
+                .farewellReason(farewellReason)
+                .farewellMessage(farewellMessage)
                 .createdAt(getCreatedAt())
                 .updatedAt(getUpdatedAt())
                 .build();

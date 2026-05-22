@@ -26,6 +26,8 @@ import { Settings } from './components/screens/Settings';
 import { EncyclopediaDetail } from './components/screens/EncyclopediaDetail';
 import { SensorDevices } from './components/screens/SensorDevices';
 import { SensorRegister } from './components/screens/SensorRegister';
+import { PlantFarewell } from './components/screens/PlantFarewell';
+import { MemorialArchive } from './components/screens/MemorialArchive';
 
 import { Colors, FontSize, Spacing } from './theme';
 
@@ -53,6 +55,14 @@ export type RootStackParamList = {
   DiaryWrite: { plantId?: number } | undefined;
   SensorDevices: undefined;
   SensorRegister: { plantId?: string } | undefined;
+  PlantFarewell: {
+    plantId: number;
+    nickname: string;
+    plantName?: string;
+    imageUrl?: string;
+    registeredAt?: string;
+  };
+  MemorialArchive: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -139,6 +149,8 @@ export default function App() {
           <Stack.Screen name="DiaryWrite" component={DiaryWrite} />
           <Stack.Screen name="SensorDevices" component={SensorDevices} />
           <Stack.Screen name="SensorRegister" component={SensorRegister} />
+          <Stack.Screen name="PlantFarewell" component={PlantFarewell} />
+          <Stack.Screen name="MemorialArchive" component={MemorialArchive} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
