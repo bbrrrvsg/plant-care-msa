@@ -123,7 +123,7 @@ export function Home() {
         <View style={styles.mainContent}>
           <View style={styles.greetingSection}>
             <Text style={styles.greetingWelcome}>환영합니다,</Text>
-            <Text style={styles.greetingName}>{nickname}님</Text>
+            <Text style={styles.greetingName}>{nickname}님!</Text>
             <Text style={styles.greetingSubtitle}>
               오늘 돌볼 식물이 {myPlants.length}개 있어요.
             </Text>
@@ -226,14 +226,14 @@ const styles = StyleSheet.create({
   mainContent: { padding: 16 },
   greetingSection: { marginBottom: 20 },
   greetingWelcome: {
-    fontSize: 60,
+    fontSize: 48,
     fontWeight: '800',
     color: '#2E7D32',
     lineHeight: 66,
     letterSpacing: -1,
   },
   greetingName: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '500',
     color: '#3a7d44',
     lineHeight: 42,
