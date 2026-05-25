@@ -3,7 +3,7 @@ import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView,
   Dimensions, Platform, StatusBar, ActivityIndicator,
 } from 'react-native';
-import { ChevronLeft, MoreVertical, Droplets, Sun, Thermometer, Calendar, PlusCircle, Settings } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Droplets, Sun, Thermometer, Calendar, PlusCircle, Settings, Heart } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
@@ -265,6 +265,21 @@ export function PlantDetail() {
             <Settings color="#374151" size={20} />
             <Text style={s.secondaryBtnText}>센서 및 장치 설정</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={s.farewellBtn}
+            onPress={() =>
+              navigation.navigate('PlantFarewell', {
+                plantId,
+                nickname: plant.nickname,
+                plantName: plant.plantName,
+                imageUrl: plant.imageUrl,
+                registeredAt: plant.registeredAt || plant.createdAt,
+              })
+            }
+          >
+            <Heart color="#9CA3AF" size={18} />
+            <Text style={s.farewellBtnText}>이 식물을 떠나보내기</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -353,4 +368,6 @@ const s = StyleSheet.create({
   },
   secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: '#D1D5DB', marginTop: 8 },
   secondaryBtnText: { fontSize: 14, color: '#374151', fontWeight: '600' },
+  farewellBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', marginTop: 8, backgroundColor: '#FAFAFA' },
+  farewellBtnText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
 });

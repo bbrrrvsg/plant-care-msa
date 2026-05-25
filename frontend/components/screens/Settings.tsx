@@ -6,7 +6,7 @@ import {
 import {
   ArrowLeft, ChevronRight, Bell, Shield, Smartphone,
   Camera, Wifi, HelpCircle, FileText, Trash2, LogOut,
-  Sprout, Mail, Pencil, X,
+  Sprout, Mail, Pencil, X, Heart,
 } from 'lucide-react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -158,6 +158,16 @@ export function Settings() {
         <View style={styles.sectionList}>
           <SettingItem icon={Camera} label="카메라 접근" isToggle enabled={cameraPermission} onToggle={() => setCameraPermission(!cameraPermission)} />
           <SettingItem icon={Wifi} label="Wi-Fi 및 네트워크" isToggle enabled={wifiPermission} onToggle={() => setWifiPermission(!wifiPermission)} />
+        </View>
+
+        {/* Memorial */}
+        <Text style={styles.sectionTitle}>추억</Text>
+        <View style={styles.sectionList}>
+          <SettingItem
+            icon={Heart}
+            label="추억 보관함"
+            onPress={() => navigation.navigate('MemorialArchive')}
+          />
         </View>
 
         {/* App Info */}

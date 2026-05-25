@@ -32,6 +32,14 @@ spring.cloud.gateway.server.webmvc.routes[4].id=diagnosis-service
 spring.cloud.gateway.server.webmvc.routes[4].uri=lb://AI-SERVICE
 spring.cloud.gateway.server.webmvc.routes[4].predicates[0]=Path=/diagnosis/**
 
+spring.cloud.gateway.server.webmvc.routes[5].id=weather
+spring.cloud.gateway.server.webmvc.routes[5].uri=lb://PLANT-SERVICE
+spring.cloud.gateway.server.webmvc.routes[5].predicates[0]=Path=/weather/**
+
+spring.cloud.gateway.server.webmvc.routes[6].id=images
+spring.cloud.gateway.server.webmvc.routes[6].uri=lb://PLANT-SERVICE
+spring.cloud.gateway.server.webmvc.routes[6].predicates[0]=Path=/images/**
+
 spring.cloud.gateway.mvc.forwarded-headers-strategy=native
 
 spring.servlet.multipart.enabled=true

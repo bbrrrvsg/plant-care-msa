@@ -19,6 +19,9 @@ public class PlantResponseDto {
     private String deviceId;       // 연결된 센서 기기 ID
     private LocalDateTime registeredAt;
     private LocalDateTime lastWatered;
+    private LocalDateTime archivedAt;        // null = 활성, 값 있음 = 추억 보관함
+    private String farewellReason;           // moved | rehomed | withered | other
+    private String farewellMessage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

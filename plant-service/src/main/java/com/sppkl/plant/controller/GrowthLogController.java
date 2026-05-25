@@ -4,8 +4,12 @@ import com.sppkl.common.dto.GrowthLogRequestDto;
 import com.sppkl.common.dto.GrowthLogDto;
 import com.sppkl.plant.service.GrowthLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -40,9 +44,37 @@ public class GrowthLogController {
          "photoUrl": null               // 선택
        }
     */
-    @PostMapping("/write")
+    @PostMapping(value = "/write", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GrowthLogDto> create(@RequestBody GrowthLogRequestDto requestDto) {
         return ResponseEntity.ok(growthLogService.logWrite(requestDto));
+    }
+
+    /* POST /growth-log/write (multipart)
+       사진 첨부 지원. JSON 바디 대신 form-data 로 전송.
+       Parts:
+         - image: 사진 파일 (선택)
+         - plantId, title, content, type, diagnosisId, logDate: form fields
+    */
+    @PostMapping(value = "/write", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<GrowthLogDto> createMultipart(
+            @RequestParam("plantId") Integer plantId,
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "diagnosisId", required = false) Long diagnosisId,
+            @RequestParam(value = "logDate", required = false) String logDate,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+
+        GrowthLogRequestDto dto = GrowthLogRequestDto.builder()
+                .plantId(plantId)
+                .title(title)
+                .content(content)
+                .type(type)
+                .diagnosisId(diagnosisId)
+                .logDate(logDate != null && !logDate.isBlank() ? LocalDate.parse(logDate) : null)
+                .build();
+
+        return ResponseEntity.ok(growthLogService.logWrite(dto, image));
     }
 
     // 수정

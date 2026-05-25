@@ -354,6 +354,13 @@ export function SensorRegister() {
               <TouchableOpacity style={styles.primaryButton} onPress={handleComplete}>
                 <Text style={styles.primaryButtonText}>센서 대시보드로 이동</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.outlineButton, { marginTop: 12 }]}
+                onPress={() => navigation.navigate('SensorDevices')}
+              >
+                <Text style={styles.outlineButtonText}>기기 관리로 이동</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>

@@ -14,5 +14,8 @@ public class BookDto {
     private String humidity;
     private String temperature;
     private String careLevel;
+    private String clCode;
+    private String grwhstleCode;
+    private String managelevelCode;
     private String imageUrl;
 }

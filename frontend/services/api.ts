@@ -2,13 +2,26 @@ import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE || 'http://192.168.68.59:8080';
-const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB || 'http://localhost:8080';
+const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE;
+const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB;
 
 
 const BASE_URL = Platform.OS === 'web' ? WEB_BASE_URL : DEVICE_BASE_URL;
 
 export { BASE_URL };
+
+/**
+ * 백엔드가 반환한 자산 경로(예: "/images/uuid_foo.jpg")를 절대 URL로 변환.
+ * - 이미 http(s)/data/file/blob URL이면 그대로 반환
+ * - "/" 로 시작하면 BASE_URL 앞에 붙임
+ * - 그 외(상대 경로/플레이스홀더)는 그대로 반환
+ */
+export function resolveAssetUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (/^(https?:|data:|file:|blob:)/i.test(url)) return url;
+  if (url.startsWith('/') && BASE_URL) return `${BASE_URL.replace(/\/$/, '')}${url}`;
+  return url;
+}
 
 const TOKEN_KEY = 'authToken';
 const NICKNAME_KEY = 'userNickname';
@@ -215,6 +228,7 @@ export const plantApi = {
     userId: number;
     nickname: string;
     location?: string;
+    speciesCode?: number;
     deviceId?: string;
     deviceName?: string;
     imageUri?: string;
@@ -223,6 +237,7 @@ export const plantApi = {
     formData.append('userId', String(params.userId));
     formData.append('nickname', params.nickname);
     if (params.location) formData.append('location', params.location);
+    if (params.speciesCode != null) formData.append('speciesCode', String(params.speciesCode));
     if (params.deviceId) formData.append('deviceId', params.deviceId);
     if (params.deviceName) formData.append('deviceName', params.deviceName);
 
@@ -246,11 +261,28 @@ export const plantApi = {
     request<MyPlantItem>({ url: `/plant/${myPlantId}`, method: 'PUT', data }),
   delete: (myPlantId: number) =>
     request<void>({ url: `/plant/${myPlantId}`, method: 'DELETE' }),
+  archive: (myPlantId: number, data: { reason: string; message: string }) =>
+    request<MyPlantItem>({
+      url: `/plant/${myPlantId}/archive`,
+      method: 'PATCH',
+      data,
+    }),
+  getMemorials: (userId: number) =>
+    request<MyPlantItem[]>({
+      url: `/plant?userId=${userId}&archived=true`,
+      method: 'GET',
+    }),
 };
 
 // plant-service의 도감 API: 응답 래퍼 없이 DTO/배열을 그대로 반환한다고 가정.
 export const bookApi = {
   getAll: () => request<PlantBookItem[]>({ url: '/book', method: 'GET' }),
+  // 카테고리: 'all' | 'beginner' | 'succulent' | 'foliage' | 'flower_fruit'
+  getByCategory: (category: string) =>
+    request<PlantBookItem[]>({
+      url: `/book?category=${encodeURIComponent(category)}`,
+      method: 'GET',
+    }),
   search: (name: string) =>
     request<PlantBookItem[]>({
       url: `/book/search?name=${encodeURIComponent(name)}`,
@@ -330,12 +362,41 @@ export const growthLogApi = {
       method: 'GET',
     }),
 
+  // 사진 없이 저장 (JSON)
   write: (data: CreateGrowthLogDto) =>
     request<GrowthLogItem>({
       url: '/growth-log/write',
       method: 'POST',
       data,
     }),
+
+  // 사진 첨부 저장 (multipart). imageUri가 있으면 multipart, 없으면 JSON 경로로 호출.
+  async writeWithImage(data: CreateGrowthLogDto, imageUri?: string | null): Promise<GrowthLogItem> {
+    if (!imageUri) {
+      return growthLogApi.write(data);
+    }
+    const formData = new FormData();
+    formData.append('plantId', String(data.plantId));
+    formData.append('title', data.title);
+    formData.append('content', data.content);
+    if (data.type) formData.append('type', data.type);
+    if (data.diagnosisId != null) formData.append('diagnosisId', String(data.diagnosisId));
+    if (data.logDate) formData.append('logDate', data.logDate);
+
+    const filename = imageUri.split('/').pop() || 'log.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+    formData.append('image', { uri: imageUri, name: filename, type } as any);
+
+    try {
+      const response = await apiClient.post<GrowthLogItem>('/growth-log/write', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(toErrorMessage(error));
+    }
+  },
 
   update: (logId: number, data: Partial<GrowthLogItem>) =>
     request<GrowthLogItem>({
@@ -348,6 +409,15 @@ export const growthLogApi = {
     request<boolean>({
       url: `/growth-log/${logId}`,
       method: 'DELETE',
+    }),
+};
+
+// 🌤️ 날씨 위젯 API — plant-service의 /weather/widget 라우트
+export const weatherApi = {
+  getWidget: (lat: number, lon: number) =>
+    request<WeatherWidgetResponse>({
+      url: `/weather/widget?lat=${lat}&lon=${lon}`,
+      method: 'GET',
     }),
 };
 
@@ -409,6 +479,9 @@ export interface MyPlantItem {
   deviceId?: string;
   registeredAt?: string;
   lastWatered?: string;
+  archivedAt?: string;            // null이면 활성, 값 있으면 추억 보관함
+  farewellReason?: string;        // moved | rehomed | withered | other
+  farewellMessage?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -483,6 +556,21 @@ export interface GrowthLogItem {
   plantNickname?: string;
   createDate?: string;
   updateDate?: string;
+  diagnosisDto?: AIDiagnosisDetail;   // includeDiagnosis=true 일 때만 채워짐
+}
+
+// 백엔드 AIDiagnosisDto 대응 (일지 상세 includeDiagnosis=true 응답에 포함)
+export interface AIDiagnosisDetail {
+  diagnosisId: number;
+  plantId: number;
+  title: string;
+  subtitle?: string;
+  details?: string;
+  result?: string;
+  imageUrl?: string;
+  diagnosisDate?: string;
+  createDate?: string;
+  updateDate?: string;
 }
 
 // 백엔드 GrowthLogRequestDto 대응 (POST /growth-log/write body)
@@ -493,4 +581,12 @@ export interface CreateGrowthLogDto {
   content: string;
   type?: string;
   logDate?: string;
+}
+
+// 백엔드 WeatherWidgetResponse 대응 (plant-service)
+export interface WeatherWidgetResponse {
+  temperature: number;
+  condition: string;
+  humidity?: number | null;
+  adviceTip: string;
 }

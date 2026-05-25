@@ -2,6 +2,7 @@ package com.sppkl.plant.service;
 
 import com.sppkl.common.dto.BookDto;
 import com.sppkl.common.dto.SensorDataDto;
+import com.sppkl.plant.Entity.BookEntity;
 import com.sppkl.plant.Entity.PlantEntity;
 import com.sppkl.plant.client.SensorClient;
 import com.sppkl.plant.client.AiServiceClient;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,11 +44,26 @@ public class PlantService {
         return sensorClient.getSensorDataByPlantId(plantId);
     }
 
-    // 내 식물 전체 조회
+    // speciesCode null-safe 조회 (도감 미매핑 식물 대응)
+    private BookEntity findBookOrNull(Integer speciesCode) {
+        return speciesCode != null
+                ? bookRepository.findById(speciesCode).orElse(null)
+                : null;
+    }
+
+    // 내 식물 전체 조회 (보관함 제외)
     public List<PlantResponseDto> getMyPlants(String userId) {
-        return plantRepository.findByUserId(userId)
+        return plantRepository.findByUserIdAndArchivedAtIsNull(userId)
                 .stream()
-                .map(entity -> entity.toDto(bookRepository.findById(entity.getSpeciesCode()).orElse(null)))
+                .map(entity -> entity.toDto(findBookOrNull(entity.getSpeciesCode())))
+                .collect(Collectors.toList());
+    }
+
+    // 추억 보관함 조회 (떠나보낸 식물)
+    public List<PlantResponseDto> getMemorialPlants(String userId) {
+        return plantRepository.findByUserIdAndArchivedAtIsNotNullOrderByArchivedAtDesc(userId)
+                .stream()
+                .map(entity -> entity.toDto(findBookOrNull(entity.getSpeciesCode())))
                 .collect(Collectors.toList());
     }
 
@@ -54,7 +71,7 @@ public class PlantService {
     public PlantResponseDto getMyPlant(Integer myPlantId) {
         PlantEntity entity = plantRepository.findById(myPlantId)
                 .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
-        return entity.toDto(bookRepository.findById(entity.getSpeciesCode()).orElse(null));
+        return entity.toDto(findBookOrNull(entity.getSpeciesCode()));
     }
 
     // 내 식물 등록
@@ -79,7 +96,7 @@ public class PlantService {
             sensorClient.linkDevice(dto.getDeviceId(), linkBody);
         }
 
-        return saved.toDto(bookRepository.findById(saved.getSpeciesCode()).orElse(null));
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }
 
     // 내 식물 수정
@@ -90,7 +107,31 @@ public class PlantService {
         entity.setNickname(dto.getNickname());
         entity.setLocation(dto.getLocation());
         PlantEntity saved = plantRepository.save(entity);
-        return saved.toDto(bookRepository.findById(saved.getSpeciesCode()).orElse(null));
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
+    }
+
+    // 식물 떠나보내기 (소프트 삭제: archived_at 세팅, 연결 기기 해제)
+    @Transactional
+    public PlantResponseDto archivePlant(Integer myPlantId, String reason, String message) {
+        PlantEntity entity = plantRepository.findById(myPlantId)
+                .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
+
+        if (entity.getArchivedAt() != null) {
+            throw new RuntimeException("이미 떠나보낸 식물입니다.");
+        }
+
+        // 연결된 기기가 있으면 센서 서비스에 연결 해제 요청 (deleteMyPlant와 동일 패턴)
+        if (entity.getDeviceId() != null) {
+            sensorClient.unlinkDevice(entity.getDeviceId());
+            entity.setDeviceId(null);
+        }
+
+        entity.setArchivedAt(LocalDateTime.now());
+        entity.setFarewellReason(reason);
+        entity.setFarewellMessage(message);
+
+        PlantEntity saved = plantRepository.save(entity);
+        return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }
 
     // 내 식물 삭제

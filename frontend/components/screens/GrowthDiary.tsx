@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, SafeAreaView, Platform, StatusBar,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sprout, Sparkles, Plus } from 'lucide-react-native';
@@ -10,7 +10,7 @@ import { useNavigation, CompositeNavigationProp, useFocusEffect } from '@react-n
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabParamList, RootStackParamList } from '../../App';
-import { growthLogApi, getUserId, GrowthLogItem } from '../../services/api';
+import { growthLogApi, getUserId, GrowthLogItem, resolveAssetUrl } from '../../services/api';
 
 type GrowthDiaryNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Diary'>,
@@ -171,7 +171,18 @@ export function GrowthDiary() {
                         </LinearGradient>
                       </View>
 
-                      <View style={styles.entryCard}>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => navigation.navigate('GrowthDetail', { logId: entry.logId })}
+                        style={styles.entryCard}
+                      >
+                        {entry.photoUrl ? (
+                          <Image
+                            source={{ uri: resolveAssetUrl(entry.photoUrl)! }}
+                            style={styles.cardPhoto}
+                            resizeMode="cover"
+                          />
+                        ) : null}
                         <View style={styles.entryContent}>
                           {entry.title ? (
                             <Text style={styles.entryTitle}>{entry.title}</Text>
@@ -202,9 +213,9 @@ export function GrowthDiary() {
                               )}
                             </View>
                           </View>
-                          <Text style={styles.entryNote}>{entry.content}</Text>
+                          <Text style={styles.entryNote} numberOfLines={3}>{entry.content}</Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   );
                 })
@@ -240,6 +251,7 @@ const styles = StyleSheet.create({
   timelineDotGradient: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   timelineDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffffff' },
   entryCard: { backgroundColor: '#ffffff', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#F3F4F6', elevation: 2 },
+  cardPhoto: { width: '100%', aspectRatio: 4 / 3, backgroundColor: '#E5E7EB' },
   entryContent: { padding: 16 },
   entryTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 12 },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },

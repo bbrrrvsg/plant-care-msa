@@ -22,10 +22,15 @@ public class BookController {
         return ResponseEntity.ok("저장완료");
     }
 
-    // 도감 전체 조회
+    // 도감 전체 조회 (category 파라미터 있으면 카테고리별, 없으면 전체)
+    // category: beginner | succulent | foliage | flower_fruit | all
     @GetMapping
-    public ResponseEntity<List<BookDto>> getAllBooks() {
-        return ResponseEntity.ok(bookService.getAllBooks());
+    public ResponseEntity<List<BookDto>> getAllBooks(
+            @RequestParam(required = false) String category) {
+        if (category == null || category.isBlank() || "all".equals(category)) {
+            return ResponseEntity.ok(bookService.getAllBooks());
+        }
+        return ResponseEntity.ok(bookService.getBooksByCategory(category));
     }
 
     // 도감 단건 조회

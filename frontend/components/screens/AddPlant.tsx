@@ -46,6 +46,7 @@ export function AddPlant() {
         userId,
         nickname: plantName.trim(),
         location: location.trim() || undefined,
+        speciesCode: prefilledSpeciesCode,
         imageUri: imageUri ?? undefined,
       });
       Alert.alert('등록 완료', '새 식물이 등록되었습니다.', [
