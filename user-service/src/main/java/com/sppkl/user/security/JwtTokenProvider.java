@@ -3,6 +3,7 @@ package com.sppkl.user.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -10,8 +11,15 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    private final String secretKey = "plantcare-secret-key-must-be-at-least-32-characters";
+    private final String secretKey;
     private final long tokenValidTime = 1000L * 60 * 60;
+
+    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
+        if (secretKey == null || secretKey.getBytes().length < 32) {
+            throw new IllegalStateException("jwt.secret must be at least 32 bytes (HS256)");
+        }
+        this.secretKey = secretKey;
+    }
 
     // 토큰 생성
     public String createToken(String userId) {

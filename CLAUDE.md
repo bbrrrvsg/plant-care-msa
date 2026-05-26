@@ -152,7 +152,6 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ### P2 — 지금 (보안/품질)
 
-- [ ] **JWT 시크릿 환경변수화** — [JwtTokenProvider.java:13](user-service/src/main/java/com/sppkl/user/security/JwtTokenProvider.java#L13)의 `secretKey` 하드코딩 상태. `application.properties` → `JWT_SECRET` 환경변수
 - [ ] **Gateway에 JWT 검증 필터 추가** — 현재 모든 요청 통과. 게이트웨이에서 토큰 검증 + 헤더(`X-User-Id`)로 사용자 식별 정보 다운스트림 전달
 - [ ] **user-service SecurityConfig `permitAll` 축소** — [SecurityConfig.java:30](user-service/src/main/java/com/sppkl/user/security/SecurityConfig.java#L30)에서 `/auth/user/**` 전부 permitAll 상태. `/auth/login`, `/auth/signup`만 열고 나머지는 인증 요구
 - [ ] **`userId`를 신뢰 입력으로 받는 패턴 제거** — 현재 plant/sensor/ai API가 query/body의 `userId`를 그대로 사용. Gateway가 주입한 헤더 또는 토큰 subject 기준으로 통일

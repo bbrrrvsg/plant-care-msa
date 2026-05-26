@@ -17,6 +17,9 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
+# JWT 시크릿 (HS256: 최소 32바이트). 운영 환경에서는 반드시 JWT_SECRET 환경변수로 주입할 것.
+jwt.secret=${JWT_SECRET:plantcare-secret-key-must-be-at-least-32-characters}
+
 # 프로필 이미지 업로드 디렉토리
 file.upload-dir=src/main/static/profile-images
 
