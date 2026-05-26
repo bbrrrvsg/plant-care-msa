@@ -74,10 +74,6 @@ export function PlantDetail() {
 
   const handleWaterPress = async () => {
     if (isWatering) return;
-    if (!plant?.deviceId) {
-      Alert.alert('연결된 기기 없음', '이 식물에 연결된 센서 기기가 없어요. 먼저 기기를 연결해 주세요.');
-      return;
-    }
     try {
       setIsWatering(true);
       await sensorApi.requestPump(plantId);
