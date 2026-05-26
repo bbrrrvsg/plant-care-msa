@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  SafeAreaView, Platform, StatusBar, Modal, Image,
+  SafeAreaView, Platform, StatusBar, Modal, Image, Alert, ActivityIndicator,
 } from 'react-native';
 import {
   ArrowLeft, ChevronRight, Bell, Shield, Smartphone,
   Camera, Wifi, HelpCircle, FileText, Trash2, LogOut,
   Sprout, Mail, Pencil, X, Heart,
 } from 'lucide-react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 
-import { clearAuthData } from '../../services/api';
+import {
+  clearAuthData, getLoginId, getNickname, resolveAssetUrl, userApi, UserProfile,
+} from '../../services/api';
 
 // ─── Custom Toggle ────────────────────────────────────────
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -108,6 +111,94 @@ export function Settings() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const fallbackNickname = getNickname() || '플랜터';
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+      const loginId = getLoginId();
+      if (!loginId) return;
+      userApi
+        .getByLoginId(loginId)
+        .then((data) => {
+          if (!cancelled) setProfile(data);
+        })
+        .catch((err) => {
+          console.warn('프로필 조회 실패:', err);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
+  const pickAndUploadProfileImage = async (loginId: string) => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('권한 필요', '프로필 사진을 변경하려면 사진 접근 권한이 필요합니다.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+
+      setIsUploadingProfile(true);
+      const updated = await userApi.uploadProfileImage(loginId, result.assets[0].uri);
+      setProfile(updated);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '프로필 사진 변경에 실패했어요.';
+      Alert.alert('업로드 실패', message);
+    } finally {
+      setIsUploadingProfile(false);
+    }
+  };
+
+  const removeProfileImage = async (loginId: string) => {
+    try {
+      setIsUploadingProfile(true);
+      const updated = await userApi.removeProfileImage(loginId);
+      setProfile(updated);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '프로필 사진 삭제에 실패했어요.';
+      Alert.alert('삭제 실패', message);
+    } finally {
+      setIsUploadingProfile(false);
+    }
+  };
+
+  const handleAvatarPress = () => {
+    const loginId = getLoginId();
+    if (!loginId) {
+      Alert.alert('로그인이 필요합니다', '다시 로그인 후 시도해 주세요.');
+      return;
+    }
+    const hasImage = !!profile?.profileImageUrl;
+    const buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }> = [
+      { text: '사진 선택', onPress: () => pickAndUploadProfileImage(loginId) },
+    ];
+    if (hasImage) {
+      buttons.push({
+        text: '기본 이미지로 되돌리기',
+        style: 'destructive',
+        onPress: () => removeProfileImage(loginId),
+      });
+    }
+    buttons.push({ text: '취소', style: 'cancel' });
+    Alert.alert('프로필 사진', undefined, buttons);
+  };
+
+  const displayNickname = profile?.nickname || fallbackNickname;
+  const displayEmail = profile?.email || '';
+  const avatarUrl = resolveAssetUrl(profile?.profileImageUrl);
+  const avatarInitial = (displayNickname || 'P').trim().charAt(0).toUpperCase();
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -126,21 +217,35 @@ export function Settings() {
         {/* Profile */}
         <View style={styles.profileCard}>
           <View style={styles.profileInfo}>
-            <View style={styles.avatarWrapper}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120' }}
-                style={styles.avatar}
-              />
-              <TouchableOpacity style={styles.editBadge}>
-                <Pencil size={12} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.profileText}>
-              <Text style={styles.userName}>김식물 집사님</Text>
-              <View style={styles.userEmailRow}>
-                <Mail size={14} color="#6B7280" />
-                <Text style={styles.userEmail}>plant_lover@example.com</Text>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={handleAvatarPress}
+              activeOpacity={0.8}
+              disabled={isUploadingProfile}
+            >
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarInitial}>{avatarInitial}</Text>
+                </View>
+              )}
+              <View style={styles.editBadge}>
+                {isUploadingProfile ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Pencil size={12} color="#ffffff" />
+                )}
               </View>
+            </TouchableOpacity>
+            <View style={styles.profileText}>
+              <Text style={styles.userName}>{displayNickname} 집사님</Text>
+              {displayEmail ? (
+                <View style={styles.userEmailRow}>
+                  <Mail size={14} color="#6B7280" />
+                  <Text style={styles.userEmail}>{displayEmail}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </View>
@@ -245,6 +350,8 @@ const styles = StyleSheet.create({
   profileInfo: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   avatarWrapper: { position: 'relative' },
   avatar: { width: 72, height: 72, borderRadius: 36 },
+  avatarPlaceholder: { backgroundColor: '#3a7d44', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { color: '#ffffff', fontSize: 28, fontWeight: '700' },
   editBadge: {
     position: 'absolute', bottom: 0, right: 0,
     backgroundColor: '#3a7d44', width: 24, height: 24, borderRadius: 12,

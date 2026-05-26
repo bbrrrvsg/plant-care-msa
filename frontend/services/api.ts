@@ -26,11 +26,13 @@ export function resolveAssetUrl(url?: string | null): string | undefined {
 const TOKEN_KEY = 'authToken';
 const NICKNAME_KEY = 'userNickname';
 const USER_ID_KEY = 'userId';
+const LOGIN_ID_KEY = 'userLoginId';
 
 // 앱이 실행되는 동안 사용할 메모리 캐시 (매번 디스크에서 읽으면 느리므로)
 let authToken: string | null = null;
 let currentNickname = '';
 let currentUserId: number | null = null;
+let currentLoginId: string | null = null;
 
 export function setToken(token: string) {
   authToken = token;
@@ -54,6 +56,10 @@ export function getUserId() {
   return currentUserId;
 }
 
+export function getLoginId() {
+  return currentLoginId;
+}
+
 /**
  * [추가된 부분 1] 앱 시작 시 저장된 토큰을 불러오는 함수
  */
@@ -62,11 +68,13 @@ export const restoreAuth = async (): Promise<boolean> => {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     const nickname = await SecureStore.getItemAsync(NICKNAME_KEY);
     const userId = await SecureStore.getItemAsync(USER_ID_KEY);
+    const loginId = await SecureStore.getItemAsync(LOGIN_ID_KEY);
 
     if (token) {
       authToken = token;
       currentNickname = nickname || '';
       currentUserId = userId ? Number(userId) : null;
+      currentLoginId = loginId || null;
       return true; // 복원 성공 (자동 로그인)
     }
   } catch (error) {
@@ -79,14 +87,23 @@ export const restoreAuth = async (): Promise<boolean> => {
  * [추가된 부분 2] 로그인 성공 시 토큰과 닉네임을 기기에 저장하는 함수
  * (Login.tsx에서 로그인 API 성공 직후 호출해야 함)
  */
-export const setAuthData = async (token: string, nickname: string, userId: number) => {
+export const setAuthData = async (
+  token: string,
+  nickname: string,
+  userId: number,
+  loginId?: string,
+) => {
   try {
     authToken = token;
     currentNickname = nickname;
     currentUserId = userId;
+    currentLoginId = loginId ?? null;
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(NICKNAME_KEY, nickname);
     await SecureStore.setItemAsync(USER_ID_KEY, String(userId));
+    if (loginId) {
+      await SecureStore.setItemAsync(LOGIN_ID_KEY, loginId);
+    }
   } catch (error) {
     console.error('토큰 저장 실패:', error);
   }
@@ -101,9 +118,11 @@ export const clearAuthData = async () => {
     authToken = null;
     currentNickname = '';
     currentUserId = null;
+    currentLoginId = null;
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(NICKNAME_KEY);
     await SecureStore.deleteItemAsync(USER_ID_KEY);
+    await SecureStore.deleteItemAsync(LOGIN_ID_KEY);
   } catch (error) {
     console.error('토큰 삭제 실패:', error);
   }
@@ -192,6 +211,43 @@ async function requestApiData<T>(config: {
   const response = await request<ApiResponse<T>>(config);
   return response.data;
 }
+
+// 사용자 프로필(user-service /auth/user/**)
+// 이 서비스만 ApiResponse 래퍼 없이 DTO를 그대로 반환하는 부분(getUser)이 있어 분기 처리한다.
+export const userApi = {
+  // /auth/user/{userId} 응답이 래핑되지 않은 DTO이므로 request<>를 그대로 사용
+  getByLoginId: (loginId: string) =>
+    request<UserProfile>({
+      url: `/auth/user/${encodeURIComponent(loginId)}`,
+      method: 'GET',
+    }),
+
+  removeProfileImage: (loginId: string) =>
+    request<UserProfile>({
+      url: `/auth/user/${encodeURIComponent(loginId)}/profile-image`,
+      method: 'DELETE',
+    }),
+
+  async uploadProfileImage(loginId: string, imageUri: string): Promise<UserProfile> {
+    const filename = imageUri.split('/').pop() || 'profile.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+
+    const formData = new FormData();
+    formData.append('image', { uri: imageUri, name: filename, type } as any);
+
+    try {
+      const response = await apiClient.patch<UserProfile>(
+        `/auth/user/${encodeURIComponent(loginId)}/profile-image`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(toErrorMessage(error));
+    }
+  },
+};
 
 export const authApi = {
   async login(userId: string, password: string) {
@@ -527,6 +583,15 @@ export interface DiagnosisResult {
   result: string;
   imageUrl: string;
   diagnosisDate: string;
+}
+
+// 백엔드 UserResponseDto 대응 (user-service /auth/user/**)
+export interface UserProfile {
+  id: number;
+  userId: string;
+  email: string;
+  nickname: string;
+  profileImageUrl?: string;
 }
 
 export interface PlantBookItem {

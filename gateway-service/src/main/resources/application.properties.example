@@ -40,6 +40,10 @@ spring.cloud.gateway.server.webmvc.routes[6].id=images
 spring.cloud.gateway.server.webmvc.routes[6].uri=lb://PLANT-SERVICE
 spring.cloud.gateway.server.webmvc.routes[6].predicates[0]=Path=/images/**
 
+spring.cloud.gateway.server.webmvc.routes[7].id=profile-images
+spring.cloud.gateway.server.webmvc.routes[7].uri=lb://AUTH-SERVICE
+spring.cloud.gateway.server.webmvc.routes[7].predicates[0]=Path=/profile-images/**
+
 spring.cloud.gateway.mvc.forwarded-headers-strategy=native
 
 spring.servlet.multipart.enabled=true

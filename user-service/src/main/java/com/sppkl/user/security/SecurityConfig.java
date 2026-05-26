@@ -28,6 +28,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/signup", "/auth/login").permitAll()
                         .requestMatchers("/auth/user/**").permitAll()
+                        .requestMatchers("/profile-images/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

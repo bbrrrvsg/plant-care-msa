@@ -10,8 +10,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabParamList, RootStackParamList } from '../../App';
 import { PlantCard } from '../shared/PlantCard';
 import {
-  getNickname, plantApi, MyPlantItem, getUserId,
-  weatherApi, WeatherWidgetResponse,
+  getNickname, plantApi, MyPlantItem, getUserId, getLoginId,
+  weatherApi, WeatherWidgetResponse, userApi, UserProfile, resolveAssetUrl,
 } from '../../services/api';
 
 type HomeNavigationProp = CompositeNavigationProp<
@@ -29,6 +29,7 @@ export function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [weather, setWeather] = useState<WeatherWidgetResponse | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   // TODO: expo-location으로 실제 사용자 좌표를 받아오도록 교체 (현재는 서울 시청 고정)
   useEffect(() => {
@@ -77,6 +78,16 @@ export function Home() {
       const cancelledRef = { current: false };
       fetchMyPlants(cancelledRef);
 
+      const loginId = getLoginId();
+      if (loginId) {
+        userApi
+          .getByLoginId(loginId)
+          .then((data) => {
+            if (!cancelledRef.current) setProfile(data);
+          })
+          .catch((err) => console.warn('프로필 조회 실패:', err));
+      }
+
       return () => {
         cancelledRef.current = true;
       };
@@ -112,10 +123,18 @@ export function Home() {
               <View style={styles.badge} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Settings')}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120' }}
-                style={styles.profileImage}
-              />
+              {(() => {
+                const avatarUrl = resolveAssetUrl(profile?.profileImageUrl);
+                if (avatarUrl) {
+                  return <Image source={{ uri: avatarUrl }} style={styles.profileImage} />;
+                }
+                const initial = (profile?.nickname || nickname || 'P').trim().charAt(0).toUpperCase();
+                return (
+                  <View style={[styles.profileImage, styles.profilePlaceholder]}>
+                    <Text style={styles.profileInitial}>{initial}</Text>
+                  </View>
+                );
+              })()}
             </TouchableOpacity>
           </View>
         </View>
@@ -223,6 +242,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   profileImage: { width: '100%', height: '100%' },
+  profilePlaceholder: { backgroundColor: '#3a7d44', alignItems: 'center', justifyContent: 'center' },
+  profileInitial: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
   mainContent: { padding: 16 },
   greetingSection: { marginBottom: 20 },
   greetingWelcome: {

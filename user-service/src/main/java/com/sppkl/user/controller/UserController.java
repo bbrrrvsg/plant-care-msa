@@ -11,6 +11,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,5 +38,17 @@ public class UserController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<UserResponseDto> getUser(@PathVariable String userId) {
         return ResponseEntity.ok(userService.getUser(userId));
+    }
+
+    @PatchMapping("/user/{userId}/profile-image")
+    public ResponseEntity<UserResponseDto> updateProfileImage(
+            @PathVariable String userId,
+            @RequestPart("image") MultipartFile image) throws IOException {
+        return ResponseEntity.ok(userService.updateProfileImage(userId, image));
+    }
+
+    @DeleteMapping("/user/{userId}/profile-image")
+    public ResponseEntity<UserResponseDto> removeProfileImage(@PathVariable String userId) {
+        return ResponseEntity.ok(userService.removeProfileImage(userId));
     }
 } //class end
