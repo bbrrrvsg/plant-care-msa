@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
-const KEY_PREFIX = 'bookFavorites:';
+// SecureStore 키는 영숫자/./-/_만 허용해서 콜론은 못 씀
+const KEY_PREFIX = 'bookFavorites_';
 
 let favorites: Set<number> = new Set();
 let activeUserId: number | null = null;
