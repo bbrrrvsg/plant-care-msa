@@ -37,7 +37,8 @@ public class SensorDeviceEntity extends BaseTime {
     @Column(name = "duration")
     private int duration;   // 펌프 가동 시간 (밀리초)
 
-
+    @Column(name = "pump_requested", nullable = false)
+    private boolean pumpRequested = false; // 앱에서 수동 물주기 요청 시 true, ESP32가 ack하면 false
 
 
     // Entity -> DTO
@@ -50,6 +51,7 @@ public class SensorDeviceEntity extends BaseTime {
                 .active(active)
                 .threshold(threshold)
                 .duration(duration)
+                .pumpRequested(pumpRequested)
                 .build();
     }
 }

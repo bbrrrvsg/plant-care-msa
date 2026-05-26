@@ -33,7 +33,8 @@ int duration = DEFAULT_DURATION;
 unsigned long lastSendTime = 0;
 unsigned long lastConfigFetchTime = 0;
 const unsigned long SENSOR_SEND_INTERVAL_MS = 10000;
-const unsigned long CONFIG_FETCH_INTERVAL_MS = 60000;
+// Poll often so the manual "water now" button from the app feels responsive.
+const unsigned long CONFIG_FETCH_INTERVAL_MS = 5000;
 
 DHT dht(DHTPIN, DHTTYPE);
 BH1750 lightMeter;
@@ -125,6 +126,37 @@ void registerDevice() {
   http.end();
 }
 
+void runPump(int durationMs, const char* reason) {
+  Serial.printf("[PUMP] %s. Running pump for %dms.\n", reason, durationMs);
+  digitalWrite(PUMP_PIN, HIGH);
+  delay(durationMs);
+  digitalWrite(PUMP_PIN, LOW);
+}
+
+void ackPump() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[WARN] pump ack skipped: WiFi is disconnected.");
+    return;
+  }
+
+  WiFiClient plainClient;
+  WiFiClientSecure secureClient;
+  HTTPClient http;
+
+  String url = buildUrl("/api/sensor/device/" + deviceId + "/pump/ack");
+  if (!beginHttp(http, plainClient, secureClient, url)) {
+    Serial.println("[ERROR] pump ack failed: invalid URL.");
+    return;
+  }
+
+  http.addHeader("Content-Type", "application/json");
+  int code = http.POST("");
+  String body = http.getString();
+  logHttpResult("pump ack", code, body);
+
+  http.end();
+}
+
 void fetchDeviceConfig() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("[WARN] config fetch skipped: WiFi is disconnected.");
@@ -154,6 +186,7 @@ void fetchDeviceConfig() {
     } else {
       int nextThreshold = doc["threshold"] | threshold;
       int nextDuration = doc["duration"] | duration;
+      bool pumpRequested = doc["pumpRequested"] | false;
 
       if (nextThreshold > 0) {
         threshold = nextThreshold;
@@ -167,7 +200,13 @@ void fetchDeviceConfig() {
         Serial.println("[WARN] invalid duration from server. Keeping previous value.");
       }
 
-      Serial.printf("[OK] config applied: threshold=%d%%, duration=%dms\n", threshold, duration);
+      Serial.printf("[OK] config applied: threshold=%d%%, duration=%dms, pumpRequested=%d\n",
+                    threshold, duration, pumpRequested ? 1 : 0);
+
+      if (pumpRequested) {
+        runPump(duration, "manual water request from app");
+        ackPump();
+      }
     }
   } else {
     logHttpResult("config fetch", code, body);
@@ -233,15 +272,9 @@ void loop() {
     if (illuminance < 0) illuminance = 0.0;
 
     if (soilPercent < threshold) {
-      Serial.printf(
-        "[PUMP] soil=%d%% < threshold=%d%%. Running pump for %dms.\n",
-        soilPercent,
-        threshold,
-        duration
-      );
-      digitalWrite(PUMP_PIN, HIGH);
-      delay(duration);
-      digitalWrite(PUMP_PIN, LOW);
+      char reason[64];
+      snprintf(reason, sizeof(reason), "soil=%d%% < threshold=%d%%", soilPercent, threshold);
+      runPump(duration, reason);
     }
 
     sendData(temperature, humidity, illuminance, soilPercent);

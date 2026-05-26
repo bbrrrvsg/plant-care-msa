@@ -96,4 +96,18 @@ public class SensorController {
             @RequestParam(defaultValue = "10") int hours) {
         return ResponseEntity.ok(sensorDataService.getHistory(plantId, hours));
     }
+
+    // 앱에서 수동 물주기 요청 (식물 기준)
+    @PostMapping("/plant/{plantId}/pump")
+    public ResponseEntity<?> requestPump(@PathVariable Integer plantId) {
+        sensorDeviceService.requestPump(plantId);
+        return ResponseEntity.ok().build();
+    }
+
+    // ESP32가 펌프 작동 후 ack (deviceId 기준)
+    @PostMapping("/device/{deviceId}/pump/ack")
+    public ResponseEntity<?> acknowledgePump(@PathVariable String deviceId) {
+        sensorDeviceService.acknowledgePump(deviceId);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -121,4 +121,23 @@ public class SensorDeviceService {
         return se.toDto();
 
     }
+
+    // 앱에서 수동 물주기 요청 - 식물에 연결된 기기에 pumpRequested 플래그 설정
+    @Transactional
+    public void requestPump(Integer plantId) {
+        SensorDeviceEntity device = sensorDeviceRepository.findByPlantId(plantId)
+                .orElseThrow(() -> new RuntimeException("식물에 연결된 기기가 없습니다."));
+        if (!device.isActive()) {
+            throw new RuntimeException("기기가 비활성 상태입니다.");
+        }
+        device.setPumpRequested(true);
+    }
+
+    // ESP32가 펌프 작동 완료 후 호출 - pumpRequested 플래그 해제
+    @Transactional
+    public void acknowledgePump(String deviceId) {
+        SensorDeviceEntity device = sensorDeviceRepository.findById(deviceId)
+                .orElseThrow(() -> new RuntimeException("등록되지 않은 기기입니다."));
+        device.setPumpRequested(false);
+    }
 }

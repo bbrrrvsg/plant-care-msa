@@ -405,6 +405,13 @@ export const sensorApi = {
       url: `/api/sensor/device/${encodeURIComponent(deviceId)}/unlink`,
       method: 'PATCH',
     }),
+
+  // 수동 물주기 요청 - ESP32가 다음 폴링에서 픽업해 펌프 작동 (최대 약 5초 지연)
+  requestPump: (plantId: number) =>
+    request<void>({
+      url: `/api/sensor/plant/${plantId}/pump`,
+      method: 'POST',
+    }),
 };
 
 // 🌱 성장 일지(GrowthLog) API — plant-service의 /growth-log/** 라우트
@@ -583,6 +590,7 @@ export interface SensorDeviceInfo {
   threshold?: number;
   duration?: number;
   speciesCode?: number;
+  pumpRequested?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

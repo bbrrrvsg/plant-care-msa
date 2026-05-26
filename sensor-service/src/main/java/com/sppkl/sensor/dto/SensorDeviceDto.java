@@ -18,6 +18,7 @@ public class SensorDeviceDto {
     private Boolean active;      // 기기 활성 여부
     private Integer threshold;   // 토양수분 임계값 (%)
     private Integer duration;    // 펌프 가동 시간 (밀리초)
+    private Boolean pumpRequested; // 앱에서 수동 물주기 요청 여부 (ESP32는 true면 즉시 펌프 작동 후 ack)
 
     // DTO -> Entity
     public SensorDeviceEntity toEntity() {
@@ -29,6 +30,7 @@ public class SensorDeviceDto {
                 .active(active)
                 .threshold(threshold)
                 .duration(duration)
+                .pumpRequested(Boolean.TRUE.equals(pumpRequested))
                 .build();
     }
 }

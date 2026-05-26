@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView,
-  Dimensions, Platform, StatusBar, ActivityIndicator,
+  Dimensions, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { ChevronLeft, MoreVertical, Droplets, Sun, Thermometer, Calendar, PlusCircle, Settings, Heart } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -70,6 +70,24 @@ export function PlantDetail() {
   const [logs, setLogs] = useState<GrowthLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWatering, setIsWatering] = useState(false);
+
+  const handleWaterPress = async () => {
+    if (isWatering) return;
+    if (!plant?.deviceId) {
+      Alert.alert('연결된 기기 없음', '이 식물에 연결된 센서 기기가 없어요. 먼저 기기를 연결해 주세요.');
+      return;
+    }
+    try {
+      setIsWatering(true);
+      await sensorApi.requestPump(plantId);
+      Alert.alert('물주기 요청 전송', '곧 펌프가 작동합니다. (최대 약 5초 지연)');
+    } catch (e) {
+      Alert.alert('물주기 실패', e instanceof Error ? e.message : '요청을 전송하지 못했어요.');
+    } finally {
+      setIsWatering(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -172,9 +190,17 @@ export function PlantDetail() {
               <Text style={s.plantName}>{plant.nickname}</Text>
               <Text style={s.plantSpecies}>{plant.plantName}</Text>
             </View>
-            <TouchableOpacity style={s.actionBtn}>
-              <Droplets color="#ffffff" size={20} />
-              <Text style={s.actionBtnText}>물주기</Text>
+            <TouchableOpacity
+              style={[s.actionBtn, isWatering && s.actionBtnDisabled]}
+              onPress={handleWaterPress}
+              disabled={isWatering}
+            >
+              {isWatering ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Droplets color="#ffffff" size={20} />
+              )}
+              <Text style={s.actionBtnText}>{isWatering ? '요청 중...' : '물주기'}</Text>
             </TouchableOpacity>
           </View>
           <View style={s.statusRow}>
@@ -302,6 +328,7 @@ const s = StyleSheet.create({
   plantName: { fontSize: 28, fontWeight: '800', color: '#111827' },
   plantSpecies: { fontSize: 16, color: '#6B7280', fontStyle: 'italic', marginTop: 4 },
   actionBtn: { flexDirection: 'row', backgroundColor: '#3a7d44', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, alignItems: 'center', gap: 6 },
+  actionBtnDisabled: { opacity: 0.6 },
   actionBtnText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
   statusRow: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   statusItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
