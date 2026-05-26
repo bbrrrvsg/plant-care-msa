@@ -27,6 +27,17 @@ const reasonOptions: { id: FarewellReason; icon: any; label: string; hint: strin
 const reasonLabel = (r?: string | null) =>
   reasonOptions.find((o) => o.id === r)?.label ?? '추억';
 
+// 보관함 표시용 과거형 라벨 (의식 선택지와 별개)
+const reasonArchiveLabel = (r?: string | null) => {
+  switch (r) {
+    case 'moved':    return '이사로 떠나보냄';
+    case 'rehomed':  return '새 가족에게 보냄';
+    case 'withered': return '시들어 떠나보냄';
+    case 'other':    return '다른 이유로 떠나보냄';
+    default:         return '추억으로 남김';
+  }
+};
+
 function daysSinceISO(iso?: string) {
   if (!iso) return 0;
   const d = new Date(iso);
@@ -589,4 +600,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export { reasonLabel };
+export { reasonLabel, reasonArchiveLabel };
