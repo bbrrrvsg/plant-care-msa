@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { hydrateFavorites } from '../lib/favoritesStore';
 
 const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE;
 const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB;
@@ -75,6 +76,7 @@ export const restoreAuth = async (): Promise<boolean> => {
       currentNickname = nickname || '';
       currentUserId = userId ? Number(userId) : null;
       currentLoginId = loginId || null;
+      await hydrateFavorites(currentUserId);
       return true; // 복원 성공 (자동 로그인)
     }
   } catch (error) {
@@ -104,6 +106,7 @@ export const setAuthData = async (
     if (loginId) {
       await SecureStore.setItemAsync(LOGIN_ID_KEY, loginId);
     }
+    await hydrateFavorites(userId);
   } catch (error) {
     console.error('토큰 저장 실패:', error);
   }
@@ -123,6 +126,7 @@ export const clearAuthData = async () => {
     await SecureStore.deleteItemAsync(NICKNAME_KEY);
     await SecureStore.deleteItemAsync(USER_ID_KEY);
     await SecureStore.deleteItemAsync(LOGIN_ID_KEY);
+    await hydrateFavorites(null);
   } catch (error) {
     console.error('토큰 삭제 실패:', error);
   }
