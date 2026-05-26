@@ -6,7 +6,7 @@ import {
 import {
   ArrowLeft, ChevronRight, Bell, Shield, Smartphone,
   Camera, Wifi, HelpCircle, FileText, Trash2, LogOut,
-  Sprout, Mail, Pencil, X, Heart,
+  Sprout, Mail, Pencil, X, Heart, Cpu,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
@@ -265,9 +265,14 @@ export function Settings() {
           <SettingItem icon={Wifi} label="Wi-Fi 및 네트워크" isToggle enabled={wifiPermission} onToggle={() => setWifiPermission(!wifiPermission)} />
         </View>
 
-        {/* Memorial */}
-        <Text style={styles.sectionTitle}>추억</Text>
+        {/* General */}
+        <Text style={styles.sectionTitle}>일반</Text>
         <View style={styles.sectionList}>
+          <SettingItem
+            icon={Cpu}
+            label="센서 기기 관리"
+            onPress={() => navigation.navigate('SensorDevices')}
+          />
           <SettingItem
             icon={Heart}
             label="추억 보관함"
