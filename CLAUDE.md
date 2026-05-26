@@ -150,31 +150,6 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ## 남은 작업 TODO
 
-### ✅ 완료 (2026-05-21)
-
-- [x] **센서 등록 후 → 기기 관리 동선 추가** — `SensorRegister.tsx` complete 단계에 "기기 관리로 이동" 보조 버튼 추가 + `SensorDashboard` 상단에 Settings 아이콘으로 SensorDevices 진입점 추가
-- [x] **도감 카테고리 필터 동작화** — 농사로 코드 컬럼 추가 방식(큰 스코프). `BookEntity`에 `clCode`/`grwhstleCode`/`managelevelCode` 추가, `DataLoader`에 `plant.book.reload` 플래그 도입, `BookService.getBooksByCategory()`로 5개 카테고리(전체/초보자용/다육식물/관엽식물/꽃·열매) 분기. `PlantEncyclopedia.tsx`는 FlatList + 반응형 컬럼(2~5)으로 재구성
-- [x] **일지 삭제 UI** — `GrowthDiary.tsx` 카드 우하단에 삭제 버튼 + 중앙 확인 모달. 낙관적 갱신, 실패 시 `Alert.alert` 폴백
-- [x] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다,"(60px/800)와 "{nickname}님"(36px/500)을 두 줄로 분리, 크기·굵기·opacity로 위계 차이 부여
-
-### ✅ 완료 (2026-05-22)
-
-- [x] **식물 "떠나보내기" + 추억 보관함** — 단순 하드 삭제 대신 소프트 삭제 + 감성 플로우.
-  - 백엔드: `PlantEntity`에 `archivedAt`/`farewellReason`/`farewellMessage` 컬럼, `PlantArchiveRequestDto` 신규, `PATCH /plant/{id}/archive` 엔드포인트, `GET /plant?archived=true` 분기. `getMyPlants`는 활성 식물(archivedAt IS NULL)만 반환하도록 `findByUserIdAndArchivedAtIsNull` 사용. archive 시 연결된 deviceId는 자동 unlink
-  - 프론트엔드 `PlantFarewell.tsx`: 4단계 플로우(intro → reason → message → ceremony → done). 꽃잎 낙하 + 이미지 펄스 애니메이션은 RN `Animated` API, 의식 단계에서 archive API 호출. `CommonActions.reset`으로 보관함/홈으로 점프
-  - 프론트엔드 `MemorialArchive.tsx`: `plantApi.getMemorials()` 호출, FlatList + 상세 모달 + 완전 삭제 재확인 모달(두 Modal 동시 불가 → 상세 닫고 확인 모달 띄움)
-  - 진입점: `PlantDetail.tsx` 하단 "이 식물을 떠나보내기" 카드(센서 설정 아래, 톤 다운), `Settings.tsx` "추억" 섹션의 "추억 보관함"
-  - 향후 옵션: "잠시 쉬어가기"(일시 비활성) — 보류
-
-### P0 (UX 누락 — 시연 전 필수)
-
-- [ ] **식물도감 추천검색어** — `PlantEncyclopedia.tsx` 검색바에 자동완성/추천 칩 표시. 후보:
-  - (가벼움) 인기 검색어 N개 하드코딩 또는 도감에서 무작위 샘플
-  - (제대로) `book` 테이블에서 plantName prefix 매칭 (백엔드 `/book/search?name=...&limit=N` 활용 또는 새 엔드포인트)
-  - 빈 검색바 클릭 시 추천 칩 노출, 입력 중에는 prefix 매칭 결과로 전환
-- [x] **성장 일지 상세 화면** (완료 2026-05-22) — [GrowthDetail.tsx](frontend/components/screens/GrowthDetail.tsx) 신설. `growthLogApi.getDetail(logId, includeDiagnosis=true)` 로드 → 히어로 이미지(탭 시 라이트박스 Modal) + 식물/날짜/시간/유형/AI 배지 메타 + AI 진단 박스(제목/소제목/디테일/권장사항 — 백엔드 `AIDiagnosisDto`에 confidence 필드 없어 신뢰도 바 대신 텍스트로 대체) + 메모 본문 + 같은 plantId logs로 이전/다음 카드(`navigation.replace('GrowthDetail', ...)`) + 하단 삭제 모달(`growthLogApi.delete`). 공유는 RN `Share.share` API. 라우트: `RootStackParamList.GrowthDetail: { logId }` 추가. 진입: `GrowthDiary.tsx` 카드 콘텐츠를 `TouchableOpacity`로 래핑, 삭제 버튼은 카드 풋터로 분리해 탭 충돌 방지. 수정 액션은 DiaryWrite가 신규 작성 전용이라 보류
-- [x] **사용자 프로필 이미지** (완료 2026-05-26) — 백엔드: `UserInfo`에 `profileImageUrl` 컬럼, `ProfileImageService`(user-service `src/main/static/profile-images/` 저장 → `/profile-images/<filename>` 반환) + `StaticResourceConfig`로 정적 매핑. `PATCH /auth/user/{userId}/profile-image` 멀티파트 엔드포인트, 기존 `GET /auth/user/{userId}` 응답에 profileImageUrl 포함. `UserResponseDto`에 필드 추가. 게이트웨이 `application.properties` routes[10]으로 `/profile-images/**` → AUTH-SERVICE 라우트 추가, user-service에 multipart 설정 + SecurityConfig permitAll. 프론트: `userApi.getByLoginId/uploadProfileImage` + `UserProfile` 타입 추가. 로그인 string ID와 numeric ID가 분리되어 있어 SecureStore `userLoginId` 키 신설(`setAuthData(loginId)` 인자 추가, `getLoginId()` 노출, Login.tsx에서 함께 저장). [Settings.tsx](frontend/components/screens/Settings.tsx) 프로필 카드는 `useFocusEffect`에서 프로필 로드 → `resolveAssetUrl`로 이미지 표시, 없으면 `#3a7d44` 원형 배경 + 닉네임 첫 글자 이니셜. 아바타 탭 → `ImagePicker.launchImageLibraryAsync(aspect [1,1])` → 업로드 중 편집 배지가 `ActivityIndicator`로 전환
-
 ### P1 (기능 완성)
 
 - [ ] **Notification 백엔드 신설** — 컨트롤러/서비스/스케줄러. 현재 `Notification*.java` 파일 자체가 없음. **학교 프로젝트 스코프 가정**:

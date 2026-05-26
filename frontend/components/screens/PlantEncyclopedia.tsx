@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, TouchableOpacity, Image, StyleSheet, Platform, StatusBar, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { Search, SlidersHorizontal, TrendingUp, Sparkles } from 'lucide-react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,6 +33,26 @@ const CATEGORIES: { label: string; key: string }[] = [
 const GRID_HORIZONTAL_PADDING = 16;
 const CARD_GAP = 12;
 
+// 인기 검색어 폴백: 도감이 비어있을 때 보여줄 기본 키워드
+const FALLBACK_POPULAR = ['몬스테라', '산세베리아', '스킨답서스', '다육식물', '선인장', '고무나무'];
+const POPULAR_SAMPLE_SIZE = 6;
+const SUGGESTION_LIMIT = 6;
+
+// 배열에서 N개 무작위 샘플 (중복 없이)
+function sampleNames(items: PlantBookItem[], n: number): string[] {
+  const names = Array.from(new Set(items.map((x) => x.plantName).filter(Boolean)));
+  if (names.length <= n) return names;
+  const out: string[] = [];
+  const used = new Set<number>();
+  while (out.length < n && used.size < names.length) {
+    const idx = Math.floor(Math.random() * names.length);
+    if (used.has(idx)) continue;
+    used.add(idx);
+    out.push(names[idx]);
+  }
+  return out;
+}
+
 export function PlantEncyclopedia() {
   const navigation = useNavigation<EncyclopediaNavigationProp>();
   const { width } = useWindowDimensions();
@@ -45,6 +65,10 @@ export function PlantEncyclopedia() {
   const [cat, setCat] = useState('all');
   const [plants, setPlants] = useState<PlantBookItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [popular, setPopular] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
+  const allPlantsCacheRef = useRef<PlantBookItem[]>([]);
 
   const loadByCategory = useCallback(async (categoryKey: string) => {
     setIsLoading(true);
@@ -52,7 +76,13 @@ export function PlantEncyclopedia() {
       const data = categoryKey === 'all'
         ? await bookApi.getAll()
         : await bookApi.getByCategory(categoryKey);
-      setPlants(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setPlants(list);
+      // 'all' 카테고리 응답을 캐싱해서 인기 검색어 샘플의 모집단으로 사용
+      if (categoryKey === 'all' && list.length > 0) {
+        allPlantsCacheRef.current = list;
+        setPopular(sampleNames(list, POPULAR_SAMPLE_SIZE));
+      }
     } catch (error) {
       console.error('도감 데이터를 불러오는데 실패했습니다:', error);
       setPlants([]);
@@ -63,16 +93,34 @@ export function PlantEncyclopedia() {
 
   useEffect(() => { loadByCategory('all'); }, [loadByCategory]);
 
+  // 입력 중에는 백엔드 검색으로 추천어 갱신 (200ms 디바운스)
+  useEffect(() => {
+    const keyword = q.trim();
+    if (!keyword) { setSuggestions([]); return; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const data = await bookApi.search(keyword);
+        if (cancelled) return;
+        const names = Array.from(new Set((data ?? []).map((x) => x.plantName).filter(Boolean))).slice(0, SUGGESTION_LIMIT);
+        setSuggestions(names);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [q]);
+
   const handleCategoryPress = (categoryKey: string) => {
     setCat(categoryKey);
     setQ('');
     loadByCategory(categoryKey);
   };
 
-  const handleSearch = async () => {
-    const keyword = q.trim();
+  const runSearch = async (keyword: string) => {
     if (!keyword) { loadByCategory(cat); return; }
     setIsLoading(true);
+    setIsFocused(false);
     try {
       const data = await bookApi.search(keyword);
       setPlants(Array.isArray(data) ? data : []);
@@ -84,6 +132,18 @@ export function PlantEncyclopedia() {
     }
   };
 
+  const handleSearch = () => runSearch(q.trim());
+
+  const handleChipPress = (keyword: string) => {
+    setQ(keyword);
+    runSearch(keyword);
+  };
+
+  // 추천어 패널 표시 조건: 검색바 포커스 상태일 때만
+  const keyword = q.trim();
+  const showSuggestionPanel = isFocused;
+  const popularChips = popular.length > 0 ? popular : FALLBACK_POPULAR;
+
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff"/>
@@ -91,10 +151,42 @@ export function PlantEncyclopedia() {
       <View style={s.searchSection}>
         <View style={s.searchBar}>
           <Search color="#9CA3AF" size={20}/>
-          <TextInput style={s.searchInput} placeholder="식물 이름이나 학명 검색" placeholderTextColor="#9CA3AF" value={q} onChangeText={setQ} onSubmitEditing={handleSearch} returnKeyType="search"/>
+          <TextInput
+            style={s.searchInput}
+            placeholder="식물 이름이나 학명 검색"
+            placeholderTextColor="#9CA3AF"
+            value={q}
+            onChangeText={setQ}
+            onSubmitEditing={handleSearch}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 120)}
+            returnKeyType="search"
+          />
         </View>
         <TouchableOpacity style={s.filterBtn} onPress={handleSearch}><SlidersHorizontal color="#374151" size={20}/></TouchableOpacity>
       </View>
+      {showSuggestionPanel && (
+        <View style={s.suggestPanel}>
+          <View style={s.suggestHeader}>
+            {keyword ? (
+              <><Sparkles color="#3a7d44" size={14}/><Text style={s.suggestTitle}>추천 검색어</Text></>
+            ) : (
+              <><TrendingUp color="#3a7d44" size={14}/><Text style={s.suggestTitle}>인기 검색어</Text></>
+            )}
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.suggestScroll} keyboardShouldPersistTaps="handled">
+            {(keyword ? suggestions : popularChips).length === 0 ? (
+              <Text style={s.suggestEmpty}>일치하는 식물이 없어요</Text>
+            ) : (
+              (keyword ? suggestions : popularChips).map((name) => (
+                <TouchableOpacity key={name} style={s.suggestChip} onPress={() => handleChipPress(name)}>
+                  <Text style={s.suggestChipText} numberOfLines={1}>{name}</Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      )}
       <View style={s.catsWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catsScroll}>
           {CATEGORIES.map((c) => (
@@ -161,4 +253,11 @@ const s = StyleSheet.create({
   tagText:{ fontSize:11, fontWeight:'600', color:'#4B5563' },
   loadingWrap:{ paddingVertical:60, alignItems:'center', justifyContent:'center' },
   emptyText:{ textAlign:'center', marginTop:60, color:'#6B7280', fontSize:14 },
+  suggestPanel:{ backgroundColor:'#ffffff', paddingTop:4, paddingBottom:8, borderBottomWidth:1, borderBottomColor:'#F3F4F6' },
+  suggestHeader:{ flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:16, paddingVertical:6 },
+  suggestTitle:{ fontSize:12, fontWeight:'600', color:'#3a7d44' },
+  suggestScroll:{ paddingHorizontal:16, gap:8, alignItems:'center' },
+  suggestEmpty:{ fontSize:13, color:'#9CA3AF', paddingVertical:6 },
+  suggestChip:{ height:32, paddingHorizontal:12, borderRadius:16, backgroundColor:'#F1F8F2', borderWidth:1, borderColor:'#CDE8D3', alignItems:'center', justifyContent:'center' },
+  suggestChipText:{ fontSize:13, fontWeight:'500', color:'#2E7D32' },
 });
