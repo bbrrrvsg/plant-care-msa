@@ -13,6 +13,10 @@ public class WebCorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOriginPattern("http://localhost:*");
         config.addAllowedOriginPattern("http://127.0.0.1:*");
+        // 모바일/태블릿 실기기 테스트용 사설망 대역 (RFC 1918)
+        config.addAllowedOriginPattern("http://192.168.*.*:*");
+        config.addAllowedOriginPattern("http://10.*.*.*:*");
+        config.addAllowedOriginPattern("http://172.*.*.*:*");
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
 

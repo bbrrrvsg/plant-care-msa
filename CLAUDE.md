@@ -162,7 +162,6 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 - [ ] JWT 시크릿 환경변수화 — `user-service/.../JwtTokenProvider.java`의 `secretKey` 하드코딩 상태
 - [ ] Gateway에 JWT 검증 필터 추가 — 현재 모든 요청 통과
-- [ ] CORS LAN IP 허용 — `gateway-service/.../WebCorsConfig.java` 현재 `localhost`/`127.0.0.1`만 허용 (모바일 테스트용 LAN IP 추가 필요)
 - [ ] `plant_db.sql`을 `src/main/java/` 밖으로 이동 — 현재 `ai-service/src/main/java/com/sppkl/ai/etc/plant_db.sql`
 
 ### P3 — 배포 시 (보안 강화, 운영 전 필수)
