@@ -229,7 +229,7 @@ export function AIDiagnosis() {
           <ArrowLeft color="#374151" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {step === 'entry' ? 'AI 식물 진단' :
+          {step === 'entry' ? 'AI 카메라' :
            step === 'analyzing' ? '분석 중' :
            step === 'identify-result' ? '식물 찾기 결과' :
            '진단 결과'}
@@ -324,9 +324,13 @@ export function AIDiagnosis() {
               <View style={styles.primaryIconBox}>
                 <Camera color="#ffffff" size={22} />
               </View>
-              <Text style={styles.primaryCardTitle}>사진 촬영으로 진단 시작</Text>
+              <Text style={styles.primaryCardTitle}>
+                {selectedPlantId === null ? '사진 촬영으로 식물 찾기' : '사진 촬영으로 진단 시작'}
+              </Text>
               <Text style={styles.primaryCardDesc}>
-                이상이 의심되는 잎이나 줄기를{'\n'}가까이서 촬영해 주세요.
+                {selectedPlantId === null
+                  ? <>찾고 싶은 식물의 잎이 잘 보이도록{'\n'}가까이서 선명하게 촬영해 주세요.</>
+                  : <>이상이 의심되는 잎이나 줄기를{'\n'}가까이서 촬영해 주세요.</>}
               </Text>
               <View style={styles.primaryCardDeco} pointerEvents="none">
                 <ScanLine color="rgba(255,255,255,0.08)" size={120} />
@@ -340,7 +344,9 @@ export function AIDiagnosis() {
               </View>
               <Text style={styles.secondaryCardTitle}>갤러리에서 사진 선택</Text>
               <Text style={styles.secondaryCardDesc}>
-                저장된 사진을 불러와{'\n'}진단을 받아보세요.
+                {selectedPlantId === null
+                  ? <>저장된 사진을 불러와{'\n'}어떤 식물인지 찾아보세요.</>
+                  : <>저장된 사진을 불러와{'\n'}진단을 받아보세요.</>}
               </Text>
               <View style={styles.secondaryCardDeco} pointerEvents="none">
                 <Upload color="#F3F4F6" size={120} />
@@ -351,7 +357,9 @@ export function AIDiagnosis() {
             <View style={styles.tipsCard}>
               <View style={styles.tipsHeader}>
                 <Sparkles color="#3a7d44" size={16} />
-                <Text style={styles.tipsHeaderText}>정확한 진단을 위한 팁</Text>
+                <Text style={styles.tipsHeaderText}>
+                  {selectedPlantId === null ? '정확한 식별을 위한 팁' : '정확한 진단을 위한 팁'}
+                </Text>
               </View>
               <View style={styles.tipRow}>
                 <View style={styles.tipIconWrap}>
@@ -363,7 +371,11 @@ export function AIDiagnosis() {
                 <View style={styles.tipIconWrap}>
                   <Leaf color="#3a7d44" size={14} />
                 </View>
-                <Text style={styles.tipRowText}>증상이 있는 부위가 잘 보이도록 가까이서 찍어주세요</Text>
+                <Text style={styles.tipRowText}>
+                  {selectedPlantId === null
+                    ? '식물의 잎 모양과 전체적인 형태가 잘 보이도록 찍어주세요'
+                    : '증상이 있는 부위가 잘 보이도록 가까이서 찍어주세요'}
+                </Text>
               </View>
               <View style={[styles.tipRow, { marginBottom: 0 }]}>
                 <View style={styles.tipIconWrap}>
@@ -397,7 +409,9 @@ export function AIDiagnosis() {
             </View>
 
             <Text style={styles.analyzingTitle}>
-              AI가 식물의 건강 상태를{'\n'}분석하고 있습니다…
+              {selectedPlantId === null
+                ? <>AI가 어떤 식물인지{'\n'}찾고 있습니다…</>
+                : <>AI가 식물의 건강 상태를{'\n'}분석하고 있습니다…</>}
             </Text>
             <Text style={styles.analyzingDesc}>
               {selectedPlantId === null
