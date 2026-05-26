@@ -472,6 +472,27 @@ export const growthLogApi = {
     }),
 };
 
+// 🔔 알림 API — sensor-service의 /api/sensor/notifications/** 라우트
+export const notificationApi = {
+  getByUser: (userId: string) =>
+    request<NotificationItem[]>({
+      url: `/api/sensor/notifications?userId=${encodeURIComponent(userId)}`,
+      method: 'GET',
+    }),
+
+  markRead: (notificationId: number) =>
+    request<void>({
+      url: `/api/sensor/notifications/${notificationId}/read`,
+      method: 'PATCH',
+    }),
+
+  markAllRead: (userId: string) =>
+    request<void>({
+      url: `/api/sensor/notifications/read-all?userId=${encodeURIComponent(userId)}`,
+      method: 'PATCH',
+    }),
+};
+
 // 🌤️ 날씨 위젯 API — plant-service의 /weather/widget 라우트
 export const weatherApi = {
   getWidget: (lat: number, lon: number) =>
@@ -650,6 +671,18 @@ export interface CreateGrowthLogDto {
   content: string;
   type?: string;
   logDate?: string;
+}
+
+// 백엔드 NotificationDto 대응 (sensor-service)
+export interface NotificationItem {
+  notificationId: number;
+  plantId: number;
+  plantNickname?: string;
+  type: 'WATER_LOW' | 'DEVICE_INACTIVE' | string;
+  title?: string;
+  message?: string;
+  isRead: boolean;
+  createdAt?: string;
 }
 
 // 백엔드 WeatherWidgetResponse 대응 (plant-service)

@@ -2,11 +2,14 @@ package com.sppkl.sensor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sppkl.common.dto.SensorDataDto;
+import com.sppkl.sensor.client.PlantClient;
+import com.sppkl.sensor.dto.PlantSummaryDto;
 import com.sppkl.sensor.entity.SensorDataEntity;
 import com.sppkl.sensor.entity.SensorDeviceEntity;
 import com.sppkl.sensor.repository.SensorDataRepository;
 import com.sppkl.sensor.repository.SensorDeviceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SensorDataService {
@@ -28,6 +32,8 @@ public class SensorDataService {
     private final SensorDataRepository sensorDataRepository;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
+    private final PlantClient plantClient;
 
     // ESP32에서 데이터 수신 → Redis 최신값 + List에 누적
     public void receiveData(SensorDataDto dto) {
@@ -58,6 +64,37 @@ public class SensorDataService {
         } catch (Exception e) {
             throw new RuntimeException("Redis 저장 실패", e);
         }
+
+        // 토양수분 임계값 알림 트리거 (threshold 0이면 미설정으로 간주, 스킵)
+        if (device.getThreshold() > 0
+                && dto.getSoilMoisture() != null
+                && dto.getSoilMoisture() < device.getThreshold()) {
+            triggerWaterLowNotification(device.getPlantId(), dto.getSoilMoisture(), device.getThreshold());
+        }
+    }
+
+    private void triggerWaterLowNotification(Integer plantId, Double moisture, int threshold) {
+        try {
+            String nickname = resolveNickname(plantId);
+            String title = "토양 수분 부족 감지";
+            String message = String.format("%s의 토양 수분이 %d%%로 떨어졌어요 (임계값 %d%%)",
+                    nickname, moisture.intValue(), threshold);
+            notificationService.createIfAbsent(plantId, "WATER_LOW", title, message);
+        } catch (Exception e) {
+            log.warn("WATER_LOW 알림 생성 실패 plantId={}: {}", plantId, e.getMessage());
+        }
+    }
+
+    private String resolveNickname(Integer plantId) {
+        try {
+            PlantSummaryDto plant = plantClient.getPlant(plantId);
+            if (plant != null && plant.getNickname() != null && !plant.getNickname().isBlank()) {
+                return plant.getNickname();
+            }
+        } catch (Exception e) {
+            log.warn("plant nickname 조회 실패 plantId={}: {}", plantId, e.getMessage());
+        }
+        return "식물 #" + plantId;
     }
 
     // 시간별 평균 히스토리 조회 (대시보드 차트용)
@@ -101,6 +138,18 @@ public class SensorDataService {
             if (Boolean.FALSE.equals(redisTemplate.hasKey(key))) {
                 device.setActive(false);
                 sensorDeviceRepository.save(device);
+
+                // 센서 이상 알림 트리거 (active=false 전환 시 1회)
+                try {
+                    String nickname = resolveNickname(device.getPlantId());
+                    String title = "센서 연결 끊김";
+                    String message = String.format("%s에 연결된 센서로부터 데이터가 들어오지 않아요", nickname);
+                    notificationService.createIfAbsent(
+                            device.getPlantId(), "DEVICE_INACTIVE", title, message);
+                } catch (Exception e) {
+                    log.warn("DEVICE_INACTIVE 알림 생성 실패 deviceId={}: {}",
+                            device.getDeviceId(), e.getMessage());
+                }
             }
         }
     }

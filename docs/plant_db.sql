@@ -78,9 +78,13 @@ CREATE TABLE growth_log (
 CREATE TABLE notification (
     notification_id BIGINT          NOT NULL AUTO_INCREMENT,
     plant_id        INT             NOT NULL,
-    type            VARCHAR(50)     NOT NULL,
+    type            VARCHAR(50)     NOT NULL,   -- WATER_LOW | DEVICE_INACTIVE
+    title           VARCHAR(100),
     message         VARCHAR(255),
+    is_read         TINYINT(1)      NOT NULL DEFAULT 0,
     is_sent         TINYINT(1)      NOT NULL DEFAULT 0,
+    created_at      DATETIME,
+    updated_at      DATETIME,
     PRIMARY KEY (notification_id),
     FOREIGN KEY (plant_id) REFERENCES my_plant(plant_id) ON DELETE CASCADE
 );

@@ -150,25 +150,22 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ## 남은 작업 TODO
 
-### P1 (기능 완성)
-
-- [ ] **Notification 백엔드 신설** — 컨트롤러/서비스/스케줄러. 현재 `Notification*.java` 파일 자체가 없음. **학교 프로젝트 스코프 가정**:
-  - 트리거 1 (물주기): `sensor_data` 평균 토양수분이 디바이스 `threshold` 이하로 N분 지속될 때 1회 발화
-  - 트리거 2 (센서 이상): 디바이스가 `active=false`로 전환될 때 1회 발화
-  - 전달: 푸시 미사용, DB(`notification` 테이블) 적재 + 앱 폴링(또는 화면 진입 시 GET). 시연용 단순화
-- [ ] **Notifications 화면** — `mockNotifications` 제거, 실제 API 연동 ([Notifications.tsx](frontend/components/screens/Notifications.tsx))
-
 ### P2 — 지금 (보안/품질)
 
-- [ ] JWT 시크릿 환경변수화 — `user-service/.../JwtTokenProvider.java`의 `secretKey` 하드코딩 상태
-- [ ] Gateway에 JWT 검증 필터 추가 — 현재 모든 요청 통과
+- [ ] **JWT 시크릿 환경변수화** — [JwtTokenProvider.java:13](user-service/src/main/java/com/sppkl/user/security/JwtTokenProvider.java#L13)의 `secretKey` 하드코딩 상태. `application.properties` → `JWT_SECRET` 환경변수
+- [ ] **Gateway에 JWT 검증 필터 추가** — 현재 모든 요청 통과. 게이트웨이에서 토큰 검증 + 헤더(`X-User-Id`)로 사용자 식별 정보 다운스트림 전달
+- [ ] **user-service SecurityConfig `permitAll` 축소** — [SecurityConfig.java:30](user-service/src/main/java/com/sppkl/user/security/SecurityConfig.java#L30)에서 `/auth/user/**` 전부 permitAll 상태. `/auth/login`, `/auth/signup`만 열고 나머지는 인증 요구
+- [ ] **`userId`를 신뢰 입력으로 받는 패턴 제거** — 현재 plant/sensor/ai API가 query/body의 `userId`를 그대로 사용. Gateway가 주입한 헤더 또는 토큰 subject 기준으로 통일
 
 ### P3 — 배포 시 (보안 강화, 운영 전 필수)
 
 - [ ] **입력값 검증 (Bean Validation)** — 현재 DTO에 `@NotBlank`, `@Size`, `@Pattern` 등 검증 어노테이션 없음. 컨트롤러에 `@Valid` 적용 + DTO에 제약 추가 (닉네임 길이/문자, 비밀번호 정책, 일지 본문 길이 등). XSS/스팸 필터링 포함
-- [ ] **이미지 업로드 검증** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 파일 확장자/MIME 타입/매직 넘버/최대 크기 검사 없음. 임의 파일 업로드(.jsp, .exe 등) 또는 거대 파일 DoS 가능. `MultipartFile.getContentType()` 화이트리스트 + 크기 제한 + 매직 넘버 체크 추가
-- [ ] **전역 에러 핸들러 + 메시지 마스킹** — 현재 `user-service`만 `@RestControllerAdvice`(UserExceptionHandler) 있고 나머지 4개 서비스(plant/sensor/ai/gateway)는 `RuntimeException` 그대로 던져 스택트레이스/JPA/Feign 내부 정보가 응답에 노출됨. 각 서비스에 공통 `@RestControllerAdvice` 추가, 운영 환경에서는 사용자에게는 일반 메시지("요청을 처리하지 못했어요")만, 상세는 서버 로그로만 출력
-- [ ] **`application.properties` 운영 설정** — `spring.jpa.show-sql`, `server.error.include-stacktrace`, `server.error.include-message` 등 운영 프로파일에서는 노출 차단 (`application-prod.properties` 분리)
+- [ ] **이미지 업로드 검증 + 저장 경로 외부화** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 확장자/MIME/매직 넘버/최대 크기 검사 없음. `MultipartFile.getContentType()` 화이트리스트 + 매직 넘버 체크 + 크기 제한. 또한 [ai-service application.properties:11](ai-service/src/main/resources/application.properties#L11)의 `C:/images/` 하드코딩 저장 경로를 환경변수화
+- [ ] **전역 에러 핸들러 + 메시지 마스킹** — `user-service`만 `@RestControllerAdvice`(UserExceptionHandler) 있고 나머지 4개 서비스(plant/sensor/ai/gateway)는 `RuntimeException` 그대로 던져 스택트레이스/JPA/Feign 내부 정보 노출. 각 서비스에 공통 `@RestControllerAdvice` 추가, 운영 환경에서는 일반 메시지만 응답, 상세는 서버 로그로만
+- [ ] **운영 프로파일 분리 + DB 마이그레이션 도입** — 현재 plant/sensor 등에서 `ddl-auto=update`, `show-sql=true` 사용. `application-local.properties`, `application-prod.properties` 분리 → 운영은 `ddl-auto=validate`, SQL 로그 off, `server.error.include-stacktrace/include-message` off. 스키마는 Flyway 또는 Liquibase로 관리
+- [ ] **Feign 안정성 설정** — timeout, retry, circuit breaker(Resilience4j) 미설정. [PlantService.java:79](plant-service/src/main/java/com/sppkl/plant/service/PlantService.java#L79) 식물 등록이 트랜잭션 안에서 ai/sensor를 동기 호출 → 원격 장애 전파, 긴 트랜잭션, 부분 성공 위험. 원격 호출은 트랜잭션 바깥 또는 보상 로직으로 분리
+- [ ] **센서 스케줄러 안정화** — [SensorDataService.java:109](sensor-service/src/main/java/com/sppkl/sensor/service/SensorDataService.java#L109)의 시간 평균 스케줄러가 인스턴스별 실행 → 다중 인스턴스 시 중복 적재. ShedLock 등 분산락 도입. 평균 계산에서 null을 0으로 더하는 부분도 null 제외로 수정
+- [ ] **테스트/CI 기본기** — `rg` 기준 백엔드/프론트 테스트 파일 없음. 서비스별 핵심 유스케이스 단위 테스트, Controller slice 테스트, 센서 Redis 로직 테스트, 프론트 API 클라이언트 타입/에러 처리 테스트부터 추가
 
 ## Claude Code 작업 팁
 
