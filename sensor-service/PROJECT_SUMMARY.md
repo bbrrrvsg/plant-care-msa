@@ -7,7 +7,7 @@
 
 ## ESP32 펌웨어
 
-- 위치: `sensor-service/src/main/java/com/sppkl/sensor/embedded/ESP32/ESP32.ino`
+- 위치: `embedded/ESP32/ESP32.ino`
 - 외부 진입점: Gateway를 `ngrok http 8080`으로 노출하고, ngrok HTTPS 주소를 `BASE_URL`에 설정합니다.
 - API 흐름: Wi-Fi 연결 -> 기기 등록 -> 기기 설정 조회 -> 센서 측정 -> 로컬 펌프 제어 -> 센서 데이터 전송
 - 기기 설정 API: `GET /api/sensor/device/{deviceId}`가 `threshold`, `duration`을 반환합니다.

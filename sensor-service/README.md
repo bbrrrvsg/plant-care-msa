@@ -2,7 +2,7 @@
 
 ## ESP32 펌웨어
 
-- 위치: `sensor-service/src/main/java/com/sppkl/sensor/embedded/ESP32/ESP32.ino`
+- 위치: `embedded/ESP32/ESP32.ino`
 - 권장 외부 터널: Gateway를 `ngrok http 8080`으로 노출합니다.
 - ngrok이 발급한 HTTPS 주소를 `ESP32.ino`의 `BASE_URL`에 입력합니다.
 - 필수 Arduino 라이브러리: `ArduinoJson`

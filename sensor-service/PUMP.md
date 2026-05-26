@@ -15,7 +15,7 @@
 ## 펌웨어 위치
 
 ```text
-sensor-service/src/main/java/com/sppkl/sensor/embedded/ESP32/ESP32.ino
+embedded/ESP32/ESP32.ino
 ```
 
 펌웨어는 `ArduinoJson`을 사용하므로 Arduino IDE 또는 PlatformIO 환경에 `ArduinoJson` 라이브러리를 설치해야 합니다.
