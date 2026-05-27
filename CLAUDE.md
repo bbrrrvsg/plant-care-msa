@@ -70,8 +70,9 @@ plant-care-msa/
 # 1. 인프라
 docker compose up -d        # Redis, MySQL
 
-# 2. 각 서비스별 application.properties 만들기 (.example 복사)
-# 환경변수: DB_PASSWORD, GEMINI_API_KEY, NONGSARO_API_KEY, OPENWEATHER_API_KEY
+# 2. 환경변수 설정 (필수): DB_PASSWORD, GEMINI_API_KEY, NONGSARO_API_KEY, OPENWEATHER_API_KEY, JWT_SECRET
+#    application.properties 는 팀 공유 설정으로 추적됨 (`${VAR:default}` 패턴).
+#    개인 환경 오버라이드가 필요하면 application-secret.properties 로.
 
 # 3. 순서대로 실행 (IntelliJ Gradle Run, 또는 ./gradlew :discovery-service:bootRun)
 discovery-service -> gateway-service -> user/plant/sensor/ai
@@ -143,7 +144,7 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ## 건드리지 말 것 (or 주의)
 
-- `**/src/main/resources/application.properties` — gitignore됨. `.example` 파일 수정 시 README도 같이.
+- `**/src/main/resources/application.properties` — **팀 공유 설정으로 추적 중**. 환경별 차이는 `${VAR:default}` 환경변수로 처리. 시크릿/개인 오버라이드가 필요하면 `application-secret.properties`(gitignore됨) 사용.
 - `frontend/.env` — gitignore됨. 팀원 IP는 자기 PC 기준으로.
 - `discovery-service` — 손댈 일 거의 없음.
 - `BaseTime` 엔티티 — 각 서비스마다 따로 정의되어 있음 (공유 안 함). 그대로 두는 게 안전.

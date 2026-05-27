@@ -131,13 +131,13 @@ plant-care-msa/
 # 1. 인프라 컨테이너 실행 (Redis + MySQL)
 docker compose up -d
 
-# 2. 각 서비스 설정 파일 생성
-# 각 서비스의 src/main/resources/application.properties.example 을 복사하여
-# application.properties 생성 후 환경변수 채우기
+# 2. 환경변수 설정 (application.properties 는 팀 공유 설정으로 git에 추적됨,
+#    각 키는 ${VAR:default} 패턴으로 환경변수 오버라이드 가능)
 #   - DB_PASSWORD
 #   - GEMINI_API_KEY
 #   - NONGSARO_API_KEY
 #   - OPENWEATHER_API_KEY
+#   - JWT_SECRET (운영 환경 필수)
 
 # 3. 서비스 실행 (순서 중요)
 ./gradlew :discovery-service:bootRun   # 가장 먼저
@@ -234,7 +234,7 @@ ESP32 ─POST /api/sensor/data─→ sensor-service
 
 ## ⚠️ 주의사항
 
-- `**/src/main/resources/application.properties` 는 **gitignore** 되어 있습니다. `.example` 파일을 복사해서 사용하세요.
+- `**/src/main/resources/application.properties` 는 **팀 공유 설정으로 git에 추적**됩니다. 환경별 차이는 `${VAR:default}` 환경변수로 처리하세요. 시크릿/개인 오버라이드가 필요하면 `application-secret.properties` (gitignore됨) 사용.
 - `frontend/.env` 도 **gitignore** 되어 있고, 팀원 각자의 PC LAN IP로 설정해야 합니다.
 - 각 서비스의 `BaseTime` 엔티티는 서비스별로 따로 정의되어 있습니다 (의도된 분리).
 - `discovery-service` 는 일반적으로 수정할 일이 없습니다.
