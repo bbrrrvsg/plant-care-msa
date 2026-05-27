@@ -17,7 +17,7 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(StaticResourceConfig.class);
 
-    @Value("${file.upload-dir:src/main/static/images}")
+    @Value("${file.upload-dir:./uploads/plant-images}")
     private String uploadDir;
 
     @Override

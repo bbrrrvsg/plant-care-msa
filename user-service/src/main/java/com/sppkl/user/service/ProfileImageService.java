@@ -14,7 +14,7 @@ import java.util.UUID;
 @Service
 public class ProfileImageService {
 
-    @Value("${file.upload-dir:src/main/static/profile-images}")
+    @Value("${file.upload-dir:./uploads/profile-images}")
     private String uploadDir;
 
     @PostConstruct

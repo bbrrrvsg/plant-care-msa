@@ -60,4 +60,12 @@ frontend/dist/
 
 plant-care-msa.code-workspace
 
-src/main/static/images
+### 업로드 파일 (이미지 등) ###
+# 새 표준 경로 — 모든 서비스의 file.upload-dir 기본값
+uploads/
+**/uploads/
+
+# 과거 잘못된 작업 디렉토리로 인해 생기던 위치 (호환 차단)
+src/main/static/
+**/src/main/static/images/
+**/src/main/static/profile-images/
