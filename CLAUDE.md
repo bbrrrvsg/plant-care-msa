@@ -44,7 +44,8 @@ plant-care-msa/
 ├── build.gradle              # 루트 (Spring Boot 3.4.5, Spring Cloud 2024.0.1)
 ├── settings.gradle           # 7개 모듈 포함
 ├── docker-compose.yml        # Redis + MySQL
-├── docs/setup.md             # 환경 세팅 가이드
+├── docs/                     # setup.md (환경 세팅), schema.sql / plant_db.sql (DB 스키마 참고)
+├── embedded/ESP32/           # ESP32 펌웨어 (.ino)
 ├── common/                   # 공유 DTO (BookDto, SensorDataDto, AIDiagnosisDto 등)
 ├── discovery-service/
 ├── gateway-service/
@@ -57,9 +58,9 @@ plant-care-msa/
     ├── services/api.ts       # 모든 API 호출 + 토큰 관리
     ├── theme.ts              # Colors, Spacing, BorderRadius, FontSize
     ├── components/
-    │   ├── screens/          # 16개 화면
-    │   └── shared/           # PlantCard, SensorWidget, StatusChip 등
-    ├── lib/                  # diaryStore, sensorStore (메모리 저장소, TODO: API화)
+    │   ├── screens/          # 20개 화면 (Home, Login, PlantDetail, AIDiagnosis, SensorDashboard 등)
+    │   └── shared/           # PlantCard, SensorWidget, StatusChip, PrimaryButton, NotificationCard
+    ├── lib/                  # sensorStore, sensorHelpers, favoritesStore (클라이언트 상태)
     └── types/index.ts
 ```
 
@@ -103,7 +104,7 @@ npm run web                 # 또는 npm start (모바일)
 - 화면 컴포넌트는 `function ComponentName()` named export
 - StyleSheet.create로 분리, 변수명은 `styles` 또는 `s` (혼용 중)
 - 네비게이션 타입은 `App.tsx`의 `RootStackParamList`, `MainTabParamList` 참조
-- API는 `services/api.ts`의 `authApi`, `plantApi`, `bookApi`, `sensorApi`, `aiApi` 통해서만 호출
+- API는 `services/api.ts`의 `authApi`, `plantApi`, `bookApi`, `sensorApi`, `aiApi`, `growthLogApi`, `notificationApi`, `weatherApi` 통해서만 호출
 
 ### 색상 / 디자인
 - 기본 초록: `#3a7d44` (primary)
@@ -160,7 +161,7 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 ### P3 — 배포 시 (보안 강화, 운영 전 필수)
 
 - [ ] **입력값 검증 (Bean Validation)** — 현재 DTO에 `@NotBlank`, `@Size`, `@Pattern` 등 검증 어노테이션 없음. 컨트롤러에 `@Valid` 적용 + DTO에 제약 추가 (닉네임 길이/문자, 비밀번호 정책, 일지 본문 길이 등). XSS/스팸 필터링 포함
-- [ ] **이미지 업로드 검증 + 저장 경로 외부화** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 확장자/MIME/매직 넘버/최대 크기 검사 없음. `MultipartFile.getContentType()` 화이트리스트 + 매직 넘버 체크 + 크기 제한. 또한 [ai-service application.properties:11](ai-service/src/main/resources/application.properties#L11)의 `C:/images/` 하드코딩 저장 경로를 환경변수화
+- [ ] **이미지 업로드 검증** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 확장자/MIME/매직 넘버/최대 크기 검사 없음. `MultipartFile.getContentType()` 화이트리스트 + 매직 넘버 체크 + 크기 제한. (저장 경로 외부화는 완료 — 모든 서비스가 `file.upload-dir=./uploads/...` 사용. 운영 시 절대경로 환경변수로 추가 오버라이드만 결정하면 됨)
 - [ ] **전역 에러 핸들러 + 메시지 마스킹** — `user-service`만 `@RestControllerAdvice`(UserExceptionHandler) 있고 나머지 4개 서비스(plant/sensor/ai/gateway)는 `RuntimeException` 그대로 던져 스택트레이스/JPA/Feign 내부 정보 노출. 각 서비스에 공통 `@RestControllerAdvice` 추가, 운영 환경에서는 일반 메시지만 응답, 상세는 서버 로그로만
 - [ ] **운영 프로파일 분리 + DB 마이그레이션 도입** — 현재 plant/sensor 등에서 `ddl-auto=update`, `show-sql=true` 사용. `application-local.properties`, `application-prod.properties` 분리 → 운영은 `ddl-auto=validate`, SQL 로그 off, `server.error.include-stacktrace/include-message` off. 스키마는 Flyway 또는 Liquibase로 관리
 - [ ] **Feign 안정성 설정** — timeout, retry, circuit breaker(Resilience4j) 미설정. [PlantService.java:79](plant-service/src/main/java/com/sppkl/plant/service/PlantService.java#L79) 식물 등록이 트랜잭션 안에서 ai/sensor를 동기 호출 → 원격 장애 전파, 긴 트랜잭션, 부분 성공 위험. 원격 호출은 트랜잭션 바깥 또는 보상 로직으로 분리

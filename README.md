@@ -94,7 +94,8 @@ plant-care-msa/
 ├── build.gradle              # 루트 빌드 설정
 ├── settings.gradle           # 7개 모듈 포함
 ├── docker-compose.yml        # Redis + MySQL 인프라
-├── docs/setup.md             # 환경 세팅 가이드
+├── docs/                     # setup.md (환경 세팅), schema.sql / plant_db.sql (DB 스키마 참고)
+├── embedded/ESP32/           # ESP32 펌웨어 (.ino)
 │
 ├── common/                   # 공유 DTO 모듈
 ├── discovery-service/        # Eureka 서버
@@ -109,9 +110,9 @@ plant-care-msa/
     ├── services/api.ts       # 모든 API 호출 + 토큰 관리
     ├── theme.ts              # 디자인 토큰
     ├── components/
-    │   ├── screens/          # 16개 화면
-    │   └── shared/           # 공통 컴포넌트
-    └── lib/                  # 로컬 저장소
+    │   ├── screens/          # 20개 화면
+    │   └── shared/           # 공통 컴포넌트 (PlantCard, SensorWidget, StatusChip 등)
+    └── lib/                  # 클라이언트 상태 (sensorStore, favoritesStore, sensorHelpers)
 ```
 
 -----
