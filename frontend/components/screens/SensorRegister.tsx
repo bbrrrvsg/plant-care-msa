@@ -128,12 +128,26 @@ export function SensorRegister() {
     }
   };
 
+  // 등록 완료 후 stack 정리 — 뒤로가기 시 등록 화면이 아닌 홈으로 떨어지게
   const handleComplete = () => {
     if (selectedPlant) {
-      navigation.navigate('SensorDashboard', { plantId: selectedPlant.myPlantId });
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'MainTabs' },
+          { name: 'SensorDashboard', params: { plantId: selectedPlant.myPlantId } },
+        ],
+      });
     } else {
-      navigation.goBack();
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     }
+  };
+
+  const goToDevices = () => {
+    navigation.reset({
+      index: 1,
+      routes: [{ name: 'MainTabs' }, { name: 'SensorDevices' }],
+    });
   };
 
   const goBack = () => {
@@ -357,7 +371,7 @@ export function SensorRegister() {
 
               <TouchableOpacity
                 style={[styles.outlineButton, { marginTop: 12 }]}
-                onPress={() => navigation.navigate('SensorDevices')}
+                onPress={goToDevices}
               >
                 <Text style={styles.outlineButtonText}>기기 관리로 이동</Text>
               </TouchableOpacity>

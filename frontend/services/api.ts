@@ -363,6 +363,12 @@ export const sensorApi = {
       url: `/api/sensor/data/${plantId}/history?hours=${hours}`,
       method: 'GET',
     }),
+  // 최근 1시간 raw 데이터 (Sparkline 분 단위 차트용)
+  getRecent: (plantId: number) =>
+    request<SensorData[]>({
+      url: `/api/sensor/data/${plantId}/recent`,
+      method: 'GET',
+    }),
 
   // 미연결 디바이스 목록 (ESP32 자동 등록 후 link 안 된 것들)
   getUnlinkedDevices: () =>
@@ -580,6 +586,9 @@ export interface CreateMyPlantDto {
   location?: string;
 }
 
+// 백엔드 DeviceStatus enum 대응
+export type DeviceStatus = 'ONLINE' | 'OFFLINE' | 'DISABLED';
+
 // 백엔드 SensorDeviceDto 대응 (sensor-service)
 export interface SensorDeviceInfo {
   deviceId: string;
@@ -591,6 +600,8 @@ export interface SensorDeviceInfo {
   duration?: number;
   speciesCode?: number;
   pumpRequested?: boolean;
+  status?: DeviceStatus;       // 통합 상태 (백엔드에서 계산)
+  lastSeenAt?: string;         // 마지막 센서 데이터 수신 시각
   createdAt?: string;
   updatedAt?: string;
 }
