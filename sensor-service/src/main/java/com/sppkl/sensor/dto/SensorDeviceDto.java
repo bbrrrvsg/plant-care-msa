@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 // 센서 기기 등록/조회 DTO
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class SensorDeviceDto {
@@ -15,10 +17,12 @@ public class SensorDeviceDto {
     private Integer plantId;     // 연결된 식물 ID (식물 연결 전에는 null)
     private Integer speciesCode; // 식물 종 코드 (watering 계산용, 연결 시에만 사용)
     private String userId;       // 기기 소유자 ID
-    private Boolean active;      // 기기 활성 여부
+    private Boolean active;      // 기기 활성 여부 (false면 DISABLED)
     private Integer threshold;   // 토양수분 임계값 (%)
     private Integer duration;    // 펌프 가동 시간 (밀리초)
     private Boolean pumpRequested; // 앱에서 수동 물주기 요청 여부 (ESP32는 true면 즉시 펌프 작동 후 ack)
+    private DeviceStatus status;   // 통합 상태 (ONLINE/OFFLINE/DISABLED) — 서비스 계층에서 주입
+    private LocalDateTime lastSeenAt; // 마지막 센서 데이터 수신 시각
 
     // DTO -> Entity
     public SensorDeviceEntity toEntity() {

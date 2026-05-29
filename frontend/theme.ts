@@ -43,6 +43,22 @@ export const Colors = {
   redBg: '#fef2f2',
 } as const;
 
+// 센서 통합 상태 컬러 — Dashboard indicator / Devices 카드 / Plant 카드 등에서 공통 사용
+export const SensorStatusColors = {
+  ONLINE:  { dot: '#22C55E', bg: '#D1FAE5', text: '#059669', label: '실시간 모니터링', badge: '온라인' },
+  OFFLINE: { dot: '#F59E0B', bg: '#FEF3C7', text: '#B45309', label: '연결 지연',       badge: '오프라인' },
+  DISABLED:{ dot: '#9CA3AF', bg: '#F3F4F6', text: '#6B7280', label: '데이터 없음',     badge: '비활성' },
+  NOT_REGISTERED: { dot: '#9CA3AF', bg: '#F3F4F6', text: '#6B7280', label: '센서 미연결', badge: '미등록' },
+} as const;
+
+// 식물 건강 상태 — 측정값 임계 기반 (정상/주의/위험)
+export const HealthStateColors = {
+  OK:      { bg: '#ECFDF5', border: '#A7F3D0', dot: '#10B981', text: '#065F46', emoji: '🟢' },
+  WARN:    { bg: '#FFFBEB', border: '#FDE68A', dot: '#F59E0B', text: '#92400E', emoji: '🟡' },
+  CRIT:    { bg: '#FEF2F2', border: '#FECACA', dot: '#EF4444', text: '#991B1B', emoji: '🔴' },
+  NO_DATA: { bg: '#F9FAFB', border: '#E5E7EB', dot: '#9CA3AF', text: '#6B7280', emoji: '⚪' },
+} as const;
+
 export const Spacing = {
   xs: 4,
   sm: 8,

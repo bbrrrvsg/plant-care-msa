@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,6 +21,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,18 +39,24 @@ public class SensorDataService {
     private final PlantClient plantClient;
 
     // ESP32에서 데이터 수신 → Redis 최신값 + List에 누적
+    @Transactional
     public void receiveData(SensorDataDto dto) {
         // 미등록 기기 거부
         SensorDeviceEntity device = sensorDeviceRepository.findById(dto.getDeviceId())
                 .orElseThrow(() -> new RuntimeException("등록되지 않은 기기입니다."));
 
-        // 비활성 기기 거부
-        if (!device.isActive()) throw new RuntimeException("비활성화된 기기입니다.");
+        // DISABLED 상태에서 데이터가 다시 들어오면 자동 재활성화 (ESP32 wifi 재연결 시 register 호출 없이 data만 보내는 경로 보호)
+        if (!device.isActive()) {
+            device.setActive(true);
+            log.info("기기 자동 재활성화 deviceId={}", device.getDeviceId());
+        }
 
         // 식물 미연결 기기 거부
         if (device.getPlantId() == null) throw new RuntimeException("식물과 연결되지 않은 기기입니다.");
 
         dto.setPlantId(device.getPlantId());
+        // 그래프 시간축 표시용 — ESP32에서 createdAt을 보내지 않으므로 서버 시각으로 stamp
+        dto.setCreatedAt(LocalDateTime.now());
 
         try {
             String json = objectMapper.writeValueAsString(dto);
@@ -64,6 +73,9 @@ public class SensorDataService {
         } catch (Exception e) {
             throw new RuntimeException("Redis 저장 실패", e);
         }
+
+        // 마지막 수신 시각 기록 (OFFLINE/DISABLED 표시 보조)
+        device.setLastSeenAt(LocalDateTime.now());
 
         // 토양수분 임계값 알림 트리거 (threshold 0이면 미설정으로 간주, 스킵)
         if (device.getThreshold() > 0
@@ -115,6 +127,25 @@ public class SensorDataService {
                 .collect(Collectors.toList());
     }
 
+    // 최근 1시간 raw 데이터 조회 (대시보드 그래프용)
+    // sensor:list:{plantId} TTL 70분이라 화면을 처음 열면 최대 ~60점 정도 반환
+    public List<SensorDataDto> getRecentRawData(Integer plantId) {
+        try {
+            String listKey = "sensor:list:" + plantId;
+            List<String> dataList = redisTemplate.opsForList().range(listKey, 0, -1);
+            if (dataList == null || dataList.isEmpty()) return Collections.emptyList();
+            List<SensorDataDto> result = new ArrayList<>(dataList.size());
+            for (String json : dataList) {
+                try {
+                    result.add(objectMapper.readValue(json, SensorDataDto.class));
+                } catch (Exception ignore) { /* 깨진 항목은 스킵 */ }
+            }
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Redis 최근 데이터 조회 실패", e);
+        }
+    }
+
     // Redis 최신값 조회 (앱 실시간 조회용)
     public SensorDataDto getLatestData(Integer plantId) {
         try {
@@ -156,6 +187,8 @@ public class SensorDataService {
 
     // 매 시간 정각에 Redis List 평균값 → DB 저장 (AI 진단용)
     @Scheduled(cron = "0 0 * * * *")
+    // [테스트용] 매 분 0초마다 평균 저장 — 다시 사용 시 위 cron 한 줄을 주석 처리하고 아래 줄 주석 해제
+    // @Scheduled(cron = "0 * * * * *")
     public void saveHourlyAverage() {
         List<SensorDeviceEntity> activeDevices = sensorDeviceRepository.findByActiveTrueAndPlantIdIsNotNull();
 
@@ -199,7 +232,7 @@ public class SensorDataService {
                     .humidity(BigDecimal.valueOf(avg.getHumidity()))
                     .soilMoisture(BigDecimal.valueOf(avg.getSoilMoisture()))
                     .illuminance(BigDecimal.valueOf(avg.getIlluminance()))
-                    .recordTime(LocalDateTime.now().truncatedTo(ChronoUnit.HOURS))
+                    .recordTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)) // TEST: 추후 MINUTES => HOURS로 변경할 것
                     .build());
 
             // List 초기화
