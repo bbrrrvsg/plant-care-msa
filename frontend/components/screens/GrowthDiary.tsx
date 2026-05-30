@@ -205,7 +205,7 @@ export function GrowthDiary() {
                                   </Text>
                                 </View>
                               ) : null}
-                              {entry.diagnosisId != null && (
+                              {entry.diagnosisId != null && entry.type !== 'AI 진단' && (
                                 <View style={styles.aiTag}>
                                   <Sparkles color="#7C3AED" size={12} />
                                   <Text style={styles.aiTagText}>AI 진단 연결</Text>

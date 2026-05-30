@@ -4,7 +4,7 @@ import {
   SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, StatusBar,
   Alert, ActivityIndicator,
 } from 'react-native';
-import { ArrowLeft, Upload, BookOpen } from 'lucide-react-native';
+import { ArrowLeft, Upload, BookOpen, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,7 +21,12 @@ export function AddPlant() {
   const [location, setLocation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const pickImage = async () => {
+  const pickFromGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요해요.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -31,6 +36,30 @@ export function AddPlant() {
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
+  };
+
+  const takePhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const chooseImageSource = () => {
+    Alert.alert('식물 사진', '사진을 어떻게 추가할까요?', [
+      { text: '카메라로 촬영', onPress: takePhoto },
+      { text: '갤러리에서 선택', onPress: pickFromGallery },
+      { text: '취소', style: 'cancel' },
+    ]);
   };
 
   const handleSubmit = async () => {
@@ -91,16 +120,22 @@ export function AddPlant() {
           {/* Photo Upload */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>식물 사진</Text>
-            <TouchableOpacity style={styles.uploadBox} onPress={pickImage}>
+            <TouchableOpacity style={styles.uploadBox} onPress={chooseImageSource}>
               {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <View>
+                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                  <View style={styles.changeBadge}>
+                    <Camera color="#ffffff" size={14} />
+                    <Text style={styles.changeBadgeText}>변경</Text>
+                  </View>
+                </View>
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.iconCircle}>
                     <Upload color="#7CCB8A" size={32} />
                   </View>
-                  <Text style={styles.uploadText}>식물 사진 업로드</Text>
-                  <Text style={styles.uploadSubText}>JPG, PNG 최대 10MB</Text>
+                  <Text style={styles.uploadText}>식물 사진 추가</Text>
+                  <Text style={styles.uploadSubText}>카메라 촬영 또는 갤러리에서 선택</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -180,6 +215,13 @@ const styles = StyleSheet.create({
   uploadText: { fontSize: 16, color: '#374151', fontWeight: '500' },
   uploadSubText: { fontSize: 12, color: '#6B7280', marginTop: 4 },
   previewImage: { width: '100%', height: 200, resizeMode: 'cover' },
+  changeBadge: {
+    position: 'absolute', bottom: 10, right: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  changeBadgeText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
   textInput: {
     backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#D1D5DB',
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
