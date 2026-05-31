@@ -34,4 +34,7 @@ public class UserInfo extends BaseTime {
 
     @Column(nullable = false, unique = true)
     private String nickname;
+
+    @Column(length = 512)
+    private String profileImageUrl;
 }

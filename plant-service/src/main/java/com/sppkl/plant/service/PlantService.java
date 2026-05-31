@@ -110,6 +110,15 @@ public class PlantService {
         return saved.toDto(findBookOrNull(saved.getSpeciesCode()));
     }
 
+    // sensor-service가 기기를 식물에 연결/해제했을 때 호출 — plant.deviceId 단방향 동기화
+    // deviceId=null이면 연결 해제 의미
+    @Transactional
+    public void updateDeviceId(Integer myPlantId, String deviceId) {
+        PlantEntity entity = plantRepository.findById(myPlantId)
+                .orElseThrow(() -> new RuntimeException("식물을 찾을 수 없습니다."));
+        entity.setDeviceId(deviceId);
+    }
+
     // 식물 떠나보내기 (소프트 삭제: archived_at 세팅, 연결 기기 해제)
     @Transactional
     public PlantResponseDto archivePlant(Integer myPlantId, String reason, String message) {

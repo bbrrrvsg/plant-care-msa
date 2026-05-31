@@ -6,7 +6,7 @@ import {
 import {
   ArrowLeft, Camera, Check, RotateCcw, BookOpen,
   Stethoscope, Upload, Sparkles, Sun, Leaf, ScanLine,
-  ChevronRight,
+  ChevronRight, Sprout,
 } from 'lucide-react-native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -14,7 +14,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabParamList, RootStackParamList } from '../../App';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  aiApi, plantApi, getUserId,
+  aiApi, plantApi, growthLogApi, getUserId,
   MyPlantItem, DiagnosisResult, PlantBookItem,
 } from '../../services/api';
 
@@ -109,6 +109,8 @@ export function AIDiagnosis() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [diagnoseError, setDiagnoseError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [savingLog, setSavingLog] = useState(false);
+  const [logSaved, setLogSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,11 +207,45 @@ export function AIDiagnosis() {
     }
   };
 
+  const saveToGrowthLog = async () => {
+    if (!diagnosis || typeof selectedPlantId !== 'number' || savingLog || logSaved) return;
+
+    setSavingLog(true);
+    try {
+      // 제목은 진단 결과 한 줄, 내용은 한 줄 요약만 (상세는 연결된 진단에서 확인)
+      const summary =
+        diagnosis.subtitle?.trim() ||
+        diagnosis.details.split('\n').map((l) => l.trim()).find((l) => l.length > 0) ||
+        diagnosis.title;
+      await growthLogApi.writeWithImage(
+        {
+          plantId: selectedPlantId,
+          diagnosisId: diagnosis.diagnosisId,
+          title: diagnosis.title,
+          content: summary,
+          type: 'AI 진단',
+        },
+        imageUri,
+      );
+      setLogSaved(true);
+      Alert.alert('저장 완료', 'AI 진단 결과가 성장일지에 저장되었습니다.', [
+        { text: '일지 보기', onPress: () => navigation.navigate('Diary') },
+        { text: '확인', style: 'cancel' },
+      ]);
+    } catch (e) {
+      Alert.alert('저장 실패', e instanceof Error ? e.message : '저장에 실패했어요.');
+    } finally {
+      setSavingLog(false);
+    }
+  };
+
   const resetAll = () => {
     setDiagnosis(null);
     setIdentifyResults([]);
     setImageUri(null);
     setDiagnoseError(null);
+    setSavingLog(false);
+    setLogSaved(false);
     setStep('entry');
   };
 
@@ -229,7 +265,7 @@ export function AIDiagnosis() {
           <ArrowLeft color="#374151" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {step === 'entry' ? 'AI 식물 진단' :
+          {step === 'entry' ? 'AI 카메라' :
            step === 'analyzing' ? '분석 중' :
            step === 'identify-result' ? '식물 찾기 결과' :
            '진단 결과'}
@@ -324,9 +360,13 @@ export function AIDiagnosis() {
               <View style={styles.primaryIconBox}>
                 <Camera color="#ffffff" size={22} />
               </View>
-              <Text style={styles.primaryCardTitle}>사진 촬영으로 진단 시작</Text>
+              <Text style={styles.primaryCardTitle}>
+                {selectedPlantId === null ? '사진 촬영으로 식물 찾기' : '사진 촬영으로 진단 시작'}
+              </Text>
               <Text style={styles.primaryCardDesc}>
-                이상이 의심되는 잎이나 줄기를{'\n'}가까이서 촬영해 주세요.
+                {selectedPlantId === null
+                  ? <>찾고 싶은 식물의 잎이 잘 보이도록{'\n'}가까이서 선명하게 촬영해 주세요.</>
+                  : <>이상이 의심되는 잎이나 줄기를{'\n'}가까이서 촬영해 주세요.</>}
               </Text>
               <View style={styles.primaryCardDeco} pointerEvents="none">
                 <ScanLine color="rgba(255,255,255,0.08)" size={120} />
@@ -340,7 +380,9 @@ export function AIDiagnosis() {
               </View>
               <Text style={styles.secondaryCardTitle}>갤러리에서 사진 선택</Text>
               <Text style={styles.secondaryCardDesc}>
-                저장된 사진을 불러와{'\n'}진단을 받아보세요.
+                {selectedPlantId === null
+                  ? <>저장된 사진을 불러와{'\n'}어떤 식물인지 찾아보세요.</>
+                  : <>저장된 사진을 불러와{'\n'}진단을 받아보세요.</>}
               </Text>
               <View style={styles.secondaryCardDeco} pointerEvents="none">
                 <Upload color="#F3F4F6" size={120} />
@@ -351,7 +393,9 @@ export function AIDiagnosis() {
             <View style={styles.tipsCard}>
               <View style={styles.tipsHeader}>
                 <Sparkles color="#3a7d44" size={16} />
-                <Text style={styles.tipsHeaderText}>정확한 진단을 위한 팁</Text>
+                <Text style={styles.tipsHeaderText}>
+                  {selectedPlantId === null ? '정확한 식별을 위한 팁' : '정확한 진단을 위한 팁'}
+                </Text>
               </View>
               <View style={styles.tipRow}>
                 <View style={styles.tipIconWrap}>
@@ -363,7 +407,11 @@ export function AIDiagnosis() {
                 <View style={styles.tipIconWrap}>
                   <Leaf color="#3a7d44" size={14} />
                 </View>
-                <Text style={styles.tipRowText}>증상이 있는 부위가 잘 보이도록 가까이서 찍어주세요</Text>
+                <Text style={styles.tipRowText}>
+                  {selectedPlantId === null
+                    ? '식물의 잎 모양과 전체적인 형태가 잘 보이도록 찍어주세요'
+                    : '증상이 있는 부위가 잘 보이도록 가까이서 찍어주세요'}
+                </Text>
               </View>
               <View style={[styles.tipRow, { marginBottom: 0 }]}>
                 <View style={styles.tipIconWrap}>
@@ -397,7 +445,9 @@ export function AIDiagnosis() {
             </View>
 
             <Text style={styles.analyzingTitle}>
-              AI가 식물의 건강 상태를{'\n'}분석하고 있습니다…
+              {selectedPlantId === null
+                ? <>AI가 어떤 식물인지{'\n'}찾고 있습니다…</>
+                : <>AI가 식물의 건강 상태를{'\n'}분석하고 있습니다…</>}
             </Text>
             <Text style={styles.analyzingDesc}>
               {selectedPlantId === null
@@ -493,6 +543,26 @@ export function AIDiagnosis() {
                     매주 식물의 변화를 확인하세요.
                   </Text>
                 </View>
+
+                <TouchableOpacity
+                  style={[styles.saveLogButton, (savingLog || logSaved) && styles.saveLogButtonDone]}
+                  onPress={saveToGrowthLog}
+                  disabled={savingLog || logSaved}
+                >
+                  {savingLog ? (
+                    <ActivityIndicator color="#3a7d44" size="small" />
+                  ) : logSaved ? (
+                    <>
+                      <Check color="#3a7d44" size={18} />
+                      <Text style={styles.saveLogButtonText}>성장일지에 저장됨</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Sprout color="#3a7d44" size={18} />
+                      <Text style={styles.saveLogButtonText}>성장일지에 저장</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
 
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={styles.outlineButton} onPress={resetAll}>
@@ -775,6 +845,14 @@ const styles = StyleSheet.create({
     padding: 12, borderRadius: 12, marginTop: 16, marginBottom: 20,
   },
   tipText: { fontSize: 13, color: '#1E3A8A', lineHeight: 20 },
+
+  saveLogButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    height: 50, borderRadius: 14, gap: 8, marginBottom: 12,
+    backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#7CCB8A',
+  },
+  saveLogButtonDone: { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
+  saveLogButtonText: { color: '#3a7d44', fontWeight: '700', fontSize: 15 },
 
   actionRow: { flexDirection: 'row', gap: 12 },
   outlineButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 50, borderRadius: 14, borderWidth: 1, borderColor: '#D1D5DB', gap: 8 },

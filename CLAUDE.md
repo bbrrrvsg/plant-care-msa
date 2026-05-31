@@ -44,7 +44,8 @@ plant-care-msa/
 ├── build.gradle              # 루트 (Spring Boot 3.4.5, Spring Cloud 2024.0.1)
 ├── settings.gradle           # 7개 모듈 포함
 ├── docker-compose.yml        # Redis + MySQL
-├── docs/setup.md             # 환경 세팅 가이드
+├── docs/                     # setup.md (환경 세팅), schema.sql / plant_db.sql (DB 스키마 참고)
+├── embedded/ESP32/           # ESP32 펌웨어 (.ino)
 ├── common/                   # 공유 DTO (BookDto, SensorDataDto, AIDiagnosisDto 등)
 ├── discovery-service/
 ├── gateway-service/
@@ -57,9 +58,9 @@ plant-care-msa/
     ├── services/api.ts       # 모든 API 호출 + 토큰 관리
     ├── theme.ts              # Colors, Spacing, BorderRadius, FontSize
     ├── components/
-    │   ├── screens/          # 16개 화면
-    │   └── shared/           # PlantCard, SensorWidget, StatusChip 등
-    ├── lib/                  # diaryStore, sensorStore (메모리 저장소, TODO: API화)
+    │   ├── screens/          # 20개 화면 (Home, Login, PlantDetail, AIDiagnosis, SensorDashboard 등)
+    │   └── shared/           # PlantCard, SensorWidget, StatusChip, PrimaryButton, NotificationCard
+    ├── lib/                  # sensorStore, sensorHelpers, favoritesStore (클라이언트 상태)
     └── types/index.ts
 ```
 
@@ -70,8 +71,9 @@ plant-care-msa/
 # 1. 인프라
 docker compose up -d        # Redis, MySQL
 
-# 2. 각 서비스별 application.properties 만들기 (.example 복사)
-# 환경변수: DB_PASSWORD, GEMINI_API_KEY, NONGSARO_API_KEY, OPENWEATHER_API_KEY
+# 2. 환경변수 설정 (필수): DB_PASSWORD, GEMINI_API_KEY, NONGSARO_API_KEY, OPENWEATHER_API_KEY, JWT_SECRET
+#    application.properties 는 팀 공유 설정으로 추적됨 (`${VAR:default}` 패턴).
+#    개인 환경 오버라이드가 필요하면 application-secret.properties 로.
 
 # 3. 순서대로 실행 (IntelliJ Gradle Run, 또는 ./gradlew :discovery-service:bootRun)
 discovery-service -> gateway-service -> user/plant/sensor/ai
@@ -102,7 +104,7 @@ npm run web                 # 또는 npm start (모바일)
 - 화면 컴포넌트는 `function ComponentName()` named export
 - StyleSheet.create로 분리, 변수명은 `styles` 또는 `s` (혼용 중)
 - 네비게이션 타입은 `App.tsx`의 `RootStackParamList`, `MainTabParamList` 참조
-- API는 `services/api.ts`의 `authApi`, `plantApi`, `bookApi`, `sensorApi`, `aiApi` 통해서만 호출
+- API는 `services/api.ts`의 `authApi`, `plantApi`, `bookApi`, `sensorApi`, `aiApi`, `growthLogApi`, `notificationApi`, `weatherApi` 통해서만 호출
 
 ### 색상 / 디자인
 - 기본 초록: `#3a7d44` (primary)
@@ -143,61 +145,28 @@ ESP32 → POST /api/sensor/data (deviceId, 측정값)
 
 ## 건드리지 말 것 (or 주의)
 
-- `**/src/main/resources/application.properties` — gitignore됨. `.example` 파일 수정 시 README도 같이.
+- `**/src/main/resources/application.properties` — **팀 공유 설정으로 추적 중**. 환경별 차이는 `${VAR:default}` 환경변수로 처리. 시크릿/개인 오버라이드가 필요하면 `application-secret.properties`(gitignore됨) 사용.
 - `frontend/.env` — gitignore됨. 팀원 IP는 자기 PC 기준으로.
 - `discovery-service` — 손댈 일 거의 없음.
 - `BaseTime` 엔티티 — 각 서비스마다 따로 정의되어 있음 (공유 안 함). 그대로 두는 게 안전.
 
 ## 남은 작업 TODO
 
-### ✅ 완료 (2026-05-21)
-
-- [x] **센서 등록 후 → 기기 관리 동선 추가** — `SensorRegister.tsx` complete 단계에 "기기 관리로 이동" 보조 버튼 추가 + `SensorDashboard` 상단에 Settings 아이콘으로 SensorDevices 진입점 추가
-- [x] **도감 카테고리 필터 동작화** — 농사로 코드 컬럼 추가 방식(큰 스코프). `BookEntity`에 `clCode`/`grwhstleCode`/`managelevelCode` 추가, `DataLoader`에 `plant.book.reload` 플래그 도입, `BookService.getBooksByCategory()`로 5개 카테고리(전체/초보자용/다육식물/관엽식물/꽃·열매) 분기. `PlantEncyclopedia.tsx`는 FlatList + 반응형 컬럼(2~5)으로 재구성
-- [x] **일지 삭제 UI** — `GrowthDiary.tsx` 카드 우하단에 삭제 버튼 + 중앙 확인 모달. 낙관적 갱신, 실패 시 `Alert.alert` 폴백
-- [x] **홈 화면 환영 문구 시각 강조** — `Home.tsx`에서 "환영합니다,"(60px/800)와 "{nickname}님"(36px/500)을 두 줄로 분리, 크기·굵기·opacity로 위계 차이 부여
-
-### ✅ 완료 (2026-05-22)
-
-- [x] **식물 "떠나보내기" + 추억 보관함** — 단순 하드 삭제 대신 소프트 삭제 + 감성 플로우.
-  - 백엔드: `PlantEntity`에 `archivedAt`/`farewellReason`/`farewellMessage` 컬럼, `PlantArchiveRequestDto` 신규, `PATCH /plant/{id}/archive` 엔드포인트, `GET /plant?archived=true` 분기. `getMyPlants`는 활성 식물(archivedAt IS NULL)만 반환하도록 `findByUserIdAndArchivedAtIsNull` 사용. archive 시 연결된 deviceId는 자동 unlink
-  - 프론트엔드 `PlantFarewell.tsx`: 4단계 플로우(intro → reason → message → ceremony → done). 꽃잎 낙하 + 이미지 펄스 애니메이션은 RN `Animated` API, 의식 단계에서 archive API 호출. `CommonActions.reset`으로 보관함/홈으로 점프
-  - 프론트엔드 `MemorialArchive.tsx`: `plantApi.getMemorials()` 호출, FlatList + 상세 모달 + 완전 삭제 재확인 모달(두 Modal 동시 불가 → 상세 닫고 확인 모달 띄움)
-  - 진입점: `PlantDetail.tsx` 하단 "이 식물을 떠나보내기" 카드(센서 설정 아래, 톤 다운), `Settings.tsx` "추억" 섹션의 "추억 보관함"
-  - 향후 옵션: "잠시 쉬어가기"(일시 비활성) — 보류
-
-### P0 (UX 누락 — 시연 전 필수)
-
-- [ ] **식물도감 추천검색어** — `PlantEncyclopedia.tsx` 검색바에 자동완성/추천 칩 표시. 후보:
-  - (가벼움) 인기 검색어 N개 하드코딩 또는 도감에서 무작위 샘플
-  - (제대로) `book` 테이블에서 plantName prefix 매칭 (백엔드 `/book/search?name=...&limit=N` 활용 또는 새 엔드포인트)
-  - 빈 검색바 클릭 시 추천 칩 노출, 입력 중에는 prefix 매칭 결과로 전환
-- [x] **성장 일지 상세 화면** (완료 2026-05-22) — [GrowthDetail.tsx](frontend/components/screens/GrowthDetail.tsx) 신설. `growthLogApi.getDetail(logId, includeDiagnosis=true)` 로드 → 히어로 이미지(탭 시 라이트박스 Modal) + 식물/날짜/시간/유형/AI 배지 메타 + AI 진단 박스(제목/소제목/디테일/권장사항 — 백엔드 `AIDiagnosisDto`에 confidence 필드 없어 신뢰도 바 대신 텍스트로 대체) + 메모 본문 + 같은 plantId logs로 이전/다음 카드(`navigation.replace('GrowthDetail', ...)`) + 하단 삭제 모달(`growthLogApi.delete`). 공유는 RN `Share.share` API. 라우트: `RootStackParamList.GrowthDetail: { logId }` 추가. 진입: `GrowthDiary.tsx` 카드 콘텐츠를 `TouchableOpacity`로 래핑, 삭제 버튼은 카드 풋터로 분리해 탭 충돌 방지. 수정 액션은 DiaryWrite가 신규 작성 전용이라 보류
-- [ ] **사용자 프로필 이미지** — 현재 [Settings.tsx:130-132](frontend/components/screens/Settings.tsx#L130-L132)에 unsplash 외국인 사진이 하드코딩됨. 업로드 UI도 없음. 필요 작업:
-  - 백엔드: `UserInfo` 엔티티에 `profileImageUrl` 컬럼 추가 + user-service에 multipart 업로드 엔드포인트(PATCH `/user/me/profile-image`) 추가 (또는 ai-service의 `ImageService`를 user-service로 이식)
-  - 프론트: Settings 화면 아바타에 카메라 아이콘 + `ImagePicker` 연결, 기본 이미지는 외국인 사진 대신 식물/이니셜 placeholder로 교체
-
-### P1 (기능 완성)
-
-- [ ] **Notification 백엔드 신설** — 컨트롤러/서비스/스케줄러. 현재 `Notification*.java` 파일 자체가 없음. **학교 프로젝트 스코프 가정**:
-  - 트리거 1 (물주기): `sensor_data` 평균 토양수분이 디바이스 `threshold` 이하로 N분 지속될 때 1회 발화
-  - 트리거 2 (센서 이상): 디바이스가 `active=false`로 전환될 때 1회 발화
-  - 전달: 푸시 미사용, DB(`notification` 테이블) 적재 + 앱 폴링(또는 화면 진입 시 GET). 시연용 단순화
-- [ ] **Notifications 화면** — `mockNotifications` 제거, 실제 API 연동 ([Notifications.tsx](frontend/components/screens/Notifications.tsx))
-
 ### P2 — 지금 (보안/품질)
 
-- [ ] JWT 시크릿 환경변수화 — `user-service/.../JwtTokenProvider.java`의 `secretKey` 하드코딩 상태
-- [ ] Gateway에 JWT 검증 필터 추가 — 현재 모든 요청 통과
-- [ ] CORS LAN IP 허용 — `gateway-service/.../WebCorsConfig.java` 현재 `localhost`/`127.0.0.1`만 허용 (모바일 테스트용 LAN IP 추가 필요)
-- [ ] `plant_db.sql`을 `src/main/java/` 밖으로 이동 — 현재 `ai-service/src/main/java/com/sppkl/ai/etc/plant_db.sql`
+- [ ] **Gateway에 JWT 검증 필터 추가** — 현재 모든 요청 통과. 게이트웨이에서 토큰 검증 + 헤더(`X-User-Id`)로 사용자 식별 정보 다운스트림 전달
+- [ ] **user-service SecurityConfig `permitAll` 축소** — [SecurityConfig.java:30](user-service/src/main/java/com/sppkl/user/security/SecurityConfig.java#L30)에서 `/auth/user/**` 전부 permitAll 상태. `/auth/login`, `/auth/signup`만 열고 나머지는 인증 요구
+- [ ] **`userId`를 신뢰 입력으로 받는 패턴 제거** — 현재 plant/sensor/ai API가 query/body의 `userId`를 그대로 사용. Gateway가 주입한 헤더 또는 토큰 subject 기준으로 통일
 
 ### P3 — 배포 시 (보안 강화, 운영 전 필수)
 
 - [ ] **입력값 검증 (Bean Validation)** — 현재 DTO에 `@NotBlank`, `@Size`, `@Pattern` 등 검증 어노테이션 없음. 컨트롤러에 `@Valid` 적용 + DTO에 제약 추가 (닉네임 길이/문자, 비밀번호 정책, 일지 본문 길이 등). XSS/스팸 필터링 포함
-- [ ] **이미지 업로드 검증** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 파일 확장자/MIME 타입/매직 넘버/최대 크기 검사 없음. 임의 파일 업로드(.jsp, .exe 등) 또는 거대 파일 DoS 가능. `MultipartFile.getContentType()` 화이트리스트 + 크기 제한 + 매직 넘버 체크 추가
-- [ ] **전역 에러 핸들러 + 메시지 마스킹** — 현재 `user-service`만 `@RestControllerAdvice`(UserExceptionHandler) 있고 나머지 4개 서비스(plant/sensor/ai/gateway)는 `RuntimeException` 그대로 던져 스택트레이스/JPA/Feign 내부 정보가 응답에 노출됨. 각 서비스에 공통 `@RestControllerAdvice` 추가, 운영 환경에서는 사용자에게는 일반 메시지("요청을 처리하지 못했어요")만, 상세는 서버 로그로만 출력
-- [ ] **`application.properties` 운영 설정** — `spring.jpa.show-sql`, `server.error.include-stacktrace`, `server.error.include-message` 등 운영 프로파일에서는 노출 차단 (`application-prod.properties` 분리)
+- [ ] **이미지 업로드 검증** — `ai-service ImageService.save()`, `plant-service` 식물 등록 multipart 모두 확장자/MIME/매직 넘버/최대 크기 검사 없음. `MultipartFile.getContentType()` 화이트리스트 + 매직 넘버 체크 + 크기 제한. (저장 경로 외부화는 완료 — 모든 서비스가 `file.upload-dir=./uploads/...` 사용. 운영 시 절대경로 환경변수로 추가 오버라이드만 결정하면 됨)
+- [ ] **전역 에러 핸들러 + 메시지 마스킹** — `user-service`만 `@RestControllerAdvice`(UserExceptionHandler) 있고 나머지 4개 서비스(plant/sensor/ai/gateway)는 `RuntimeException` 그대로 던져 스택트레이스/JPA/Feign 내부 정보 노출. 각 서비스에 공통 `@RestControllerAdvice` 추가, 운영 환경에서는 일반 메시지만 응답, 상세는 서버 로그로만
+- [ ] **운영 프로파일 분리 + DB 마이그레이션 도입** — 현재 plant/sensor 등에서 `ddl-auto=update`, `show-sql=true` 사용. `application-local.properties`, `application-prod.properties` 분리 → 운영은 `ddl-auto=validate`, SQL 로그 off, `server.error.include-stacktrace/include-message` off. 스키마는 Flyway 또는 Liquibase로 관리
+- [ ] **Feign 안정성 설정** — timeout, retry, circuit breaker(Resilience4j) 미설정. [PlantService.java:79](plant-service/src/main/java/com/sppkl/plant/service/PlantService.java#L79) 식물 등록이 트랜잭션 안에서 ai/sensor를 동기 호출 → 원격 장애 전파, 긴 트랜잭션, 부분 성공 위험. 원격 호출은 트랜잭션 바깥 또는 보상 로직으로 분리
+- [ ] **센서 스케줄러 안정화** — [SensorDataService.java:109](sensor-service/src/main/java/com/sppkl/sensor/service/SensorDataService.java#L109)의 시간 평균 스케줄러가 인스턴스별 실행 → 다중 인스턴스 시 중복 적재. ShedLock 등 분산락 도입. 평균 계산에서 null을 0으로 더하는 부분도 null 제외로 수정
+- [ ] **테스트/CI 기본기** — `rg` 기준 백엔드/프론트 테스트 파일 없음. 서비스별 핵심 유스케이스 단위 테스트, Controller slice 테스트, 센서 Redis 로직 테스트, 프론트 API 클라이언트 타입/에러 처리 테스트부터 추가
 
 ## Claude Code 작업 팁
 

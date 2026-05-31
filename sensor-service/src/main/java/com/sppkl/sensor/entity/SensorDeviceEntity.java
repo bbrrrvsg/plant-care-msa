@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 // 센서 기기 등록 엔티티
 // 식물 등록 시 연결된 ESP32 기기 정보를 저장
 // MSA 구조상 plant-service와 FK 없이 plantId 값으로만 연결
@@ -37,7 +39,11 @@ public class SensorDeviceEntity extends BaseTime {
     @Column(name = "duration")
     private int duration;   // 펌프 가동 시간 (밀리초)
 
+    @Column(name = "pump_requested", nullable = false)
+    private boolean pumpRequested = false; // 앱에서 수동 물주기 요청 시 true, ESP32가 ack하면 false
 
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt; // 마지막으로 센서 데이터를 수신한 시각 (OFFLINE/DISABLED 판단 보조)
 
 
     // Entity -> DTO
@@ -50,6 +56,8 @@ public class SensorDeviceEntity extends BaseTime {
                 .active(active)
                 .threshold(threshold)
                 .duration(duration)
+                .pumpRequested(pumpRequested)
+                .lastSeenAt(lastSeenAt)
                 .build();
     }
 }

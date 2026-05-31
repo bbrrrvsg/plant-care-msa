@@ -5,6 +5,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 import { bookApi, plantApi, getUserId, PlantBookDetail } from '../../services/api';
+import { toggleFavorite, useFavorites } from '../../lib/favoritesStore';
 const { width } = Dimensions.get('window');
 const CareCard = ({ icon, label, value }:any) => (
   <View style={s.careCard}><View style={s.careIcon}>{icon}</View><Text style={s.careLabel}>{label}</Text><Text style={s.careValue}>{value}</Text></View>
@@ -16,6 +17,8 @@ export function EncyclopediaDetail() {
 
   const [plant, setPlant] = useState<PlantBookDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const favorites = useFavorites();
+  const favorited = favorites.has(speciesCode);
 
   useEffect(() => {
     let mounted = true;
@@ -97,7 +100,9 @@ export function EncyclopediaDetail() {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent/>
       <View style={s.floatingHeader}>
         <TouchableOpacity style={s.headerBtn} onPress={()=>navigation.goBack()}><ChevronLeft color="#111827" size={24}/></TouchableOpacity>
-        <TouchableOpacity style={s.headerBtn}><Heart color="#EF4444" size={24}/></TouchableOpacity>
+        <TouchableOpacity style={s.headerBtn} onPress={() => toggleFavorite(speciesCode)}>
+          <Heart color="#EF4444" size={24} fill={favorited ? '#EF4444' : 'transparent'}/>
+        </TouchableOpacity>
       </View>
       <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
         <View style={s.imageContainer}>

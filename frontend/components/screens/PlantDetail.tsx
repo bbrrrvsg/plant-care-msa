@@ -1,27 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView,
-  Dimensions, Platform, StatusBar, ActivityIndicator,
+  Dimensions, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { ChevronLeft, MoreVertical, Droplets, Sun, Thermometer, Calendar, PlusCircle, Settings, Heart } from 'lucide-react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 import { plantApi, sensorApi, growthLogApi, MyPlantItem, SensorData, GrowthLogItem, getUserId } from '../../services/api';
-import { getMoistureStatus, getTempStatus, getIlluminanceStatus } from '../../lib/sensorHelpers';
+import {
+  getHealthVisual,
+  illuminanceMetric,
+  moistureMetric,
+  tempMetric,
+  type MetricSummary,
+} from '../../lib/sensorState';
 import { Colors } from '../../theme';
 
 const { width } = Dimensions.get('window');
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=800';
 
-const SensorWidget = ({ label, value, icon, status }: any) => (
-  <View style={s.sensorWidget}>
-    {icon}
-    <Text style={s.sensorValue}>{value}</Text>
-    <Text style={s.sensorLabel}>{label}</Text>
-    <View style={s.statusTag}><Text style={s.statusTagText}>{status}</Text></View>
-  </View>
-);
+// SensorDashboard와 동일한 HealthStateColors 팔레트로 status pill 컬러 분기
+const SensorWidget = ({
+  label, value, icon, metric,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  metric: MetricSummary;
+}) => {
+  const v = getHealthVisual(metric.state);
+  return (
+    <View style={s.sensorWidget}>
+      {icon}
+      <Text style={s.sensorValue}>{value}</Text>
+      <Text style={s.sensorLabel}>{label}</Text>
+      <View style={[s.statusTag, { backgroundColor: v.bg }]}>
+        <Text style={[s.statusTagText, { color: v.text }]}>{metric.description}</Text>
+      </View>
+    </View>
+  );
+};
 
 const computeDayCount = (dateStr?: string) => {
   if (!dateStr) return 'D+0';
@@ -70,10 +89,26 @@ export function PlantDetail() {
   const [logs, setLogs] = useState<GrowthLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWatering, setIsWatering] = useState(false);
+  const hasLoadedRef = useRef(false);
 
-  const loadData = async () => {
+  const handleWaterPress = async () => {
+    if (isWatering) return;
     try {
-      setIsLoading(true);
+      setIsWatering(true);
+      await sensorApi.requestPump(plantId);
+      Alert.alert('물주기 요청 전송', '곧 펌프가 작동합니다. (최대 약 5초 지연)');
+    } catch (e) {
+      Alert.alert('물주기 실패', e instanceof Error ? e.message : '요청을 전송하지 못했어요.');
+    } finally {
+      setIsWatering(false);
+    }
+  };
+
+  // 첫 로드만 로딩 스피너 표시, 포커스 복귀 시에는 silent refresh (화면 깜빡임 방지)
+  const loadData = useCallback(async () => {
+    try {
+      if (!hasLoadedRef.current) setIsLoading(true);
       setError(null);
       const userId = getUserId();
 
@@ -89,45 +124,15 @@ export function PlantDetail() {
       setSensor(sensorData);
       setLogs(getRecentPlantLogs(allLogs, plantId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : '식물 정보를 불러오지 못했어요.');
+      if (!hasLoadedRef.current) setError(e instanceof Error ? e.message : '식물 정보를 불러오지 못했어요.');
     } finally {
       setIsLoading(false);
+      hasLoadedRef.current = true;
     }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const userId = getUserId();
-
-        const [plantData, sensorData, allLogs] = await Promise.all([
-          plantApi.getById(plantId),
-          sensorApi.getLatest(plantId).catch(() => null),
-          userId != null
-            ? growthLogApi.getMyLogs(userId).catch(() => [] as GrowthLogItem[])
-            : Promise.resolve([] as GrowthLogItem[]),
-        ]);
-
-        const plantLogs = getRecentPlantLogs(allLogs, plantId);
-
-        if (!cancelled) {
-          setPlant(plantData);
-          setSensor(sensorData);
-          setLogs(plantLogs);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : '식물 정보를 불러오지 못했어요.');
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
   }, [plantId]);
+
+  // 화면 포커스마다 재로드 — 센서 등록/대시보드에서 돌아왔을 때 최신 상태 반영
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   if (isLoading) {
     return (
@@ -172,9 +177,17 @@ export function PlantDetail() {
               <Text style={s.plantName}>{plant.nickname}</Text>
               <Text style={s.plantSpecies}>{plant.plantName}</Text>
             </View>
-            <TouchableOpacity style={s.actionBtn}>
-              <Droplets color="#ffffff" size={20} />
-              <Text style={s.actionBtnText}>물주기</Text>
+            <TouchableOpacity
+              style={[s.actionBtn, isWatering && s.actionBtnDisabled]}
+              onPress={handleWaterPress}
+              disabled={isWatering}
+            >
+              {isWatering ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Droplets color="#ffffff" size={20} />
+              )}
+              <Text style={s.actionBtnText}>{isWatering ? '요청 중...' : '물주기'}</Text>
             </TouchableOpacity>
           </View>
           <View style={s.statusRow}>
@@ -199,19 +212,19 @@ export function PlantDetail() {
                 label="토양 수분"
                 value={sensor?.soilMoisture != null ? `${Math.round(sensor.soilMoisture)}%` : '-'}
                 icon={<Droplets color="#3B82F6" size={24} />}
-                status={getMoistureStatus(sensor?.soilMoisture)}
+                metric={moistureMetric(sensor?.soilMoisture)}
               />
               <SensorWidget
                 label="주변 온도"
                 value={sensor?.temperature != null ? `${Math.round(sensor.temperature)}°C` : '-'}
                 icon={<Thermometer color="#EF4444" size={24} />}
-                status={getTempStatus(sensor?.temperature)}
+                metric={tempMetric(sensor?.temperature)}
               />
               <SensorWidget
                 label="조도"
                 value={sensor?.illuminance != null ? `${Math.round(sensor.illuminance)} lux` : '-'}
                 icon={<Sun color="#F59E0B" size={24} />}
-                status={getIlluminanceStatus(sensor?.illuminance)}
+                metric={illuminanceMetric(sensor?.illuminance)}
               />
             </View>
           </View>
@@ -261,10 +274,16 @@ export function PlantDetail() {
               </View>
             )}
           </View>
-          <TouchableOpacity style={s.secondaryBtn} onPress={() => navigation.navigate('SensorRegister')}>
-            <Settings color="#374151" size={20} />
-            <Text style={s.secondaryBtnText}>센서 및 장치 설정</Text>
-          </TouchableOpacity>
+          {/* 센서 미등록 식물에서만 등록 안내 버튼 노출 — 등록된 식물은 SensorDashboard에서 관리 */}
+          {!plant.deviceId && !sensor?.deviceId && (
+            <TouchableOpacity
+              style={s.secondaryBtn}
+              onPress={() => navigation.navigate('SensorRegister', { plantId: String(plantId) })}
+            >
+              <Settings color="#374151" size={20} />
+              <Text style={s.secondaryBtnText}>센서 등록</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={s.farewellBtn}
             onPress={() =>
@@ -302,6 +321,7 @@ const s = StyleSheet.create({
   plantName: { fontSize: 28, fontWeight: '800', color: '#111827' },
   plantSpecies: { fontSize: 16, color: '#6B7280', fontStyle: 'italic', marginTop: 4 },
   actionBtn: { flexDirection: 'row', backgroundColor: '#3a7d44', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, alignItems: 'center', gap: 6 },
+  actionBtnDisabled: { opacity: 0.6 },
   actionBtnText: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
   statusRow: { flexDirection: 'row', gap: 16, marginBottom: 32 },
   statusItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

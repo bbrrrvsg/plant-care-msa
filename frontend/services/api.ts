@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { hydrateFavorites } from '../lib/favoritesStore';
 
 const DEVICE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_DEVICE;
 const WEB_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL_WEB;
@@ -26,11 +27,13 @@ export function resolveAssetUrl(url?: string | null): string | undefined {
 const TOKEN_KEY = 'authToken';
 const NICKNAME_KEY = 'userNickname';
 const USER_ID_KEY = 'userId';
+const LOGIN_ID_KEY = 'userLoginId';
 
 // 앱이 실행되는 동안 사용할 메모리 캐시 (매번 디스크에서 읽으면 느리므로)
 let authToken: string | null = null;
 let currentNickname = '';
 let currentUserId: number | null = null;
+let currentLoginId: string | null = null;
 
 export function setToken(token: string) {
   authToken = token;
@@ -54,6 +57,10 @@ export function getUserId() {
   return currentUserId;
 }
 
+export function getLoginId() {
+  return currentLoginId;
+}
+
 /**
  * [추가된 부분 1] 앱 시작 시 저장된 토큰을 불러오는 함수
  */
@@ -62,11 +69,14 @@ export const restoreAuth = async (): Promise<boolean> => {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     const nickname = await SecureStore.getItemAsync(NICKNAME_KEY);
     const userId = await SecureStore.getItemAsync(USER_ID_KEY);
+    const loginId = await SecureStore.getItemAsync(LOGIN_ID_KEY);
 
     if (token) {
       authToken = token;
       currentNickname = nickname || '';
       currentUserId = userId ? Number(userId) : null;
+      currentLoginId = loginId || null;
+      await hydrateFavorites(currentUserId);
       return true; // 복원 성공 (자동 로그인)
     }
   } catch (error) {
@@ -79,14 +89,24 @@ export const restoreAuth = async (): Promise<boolean> => {
  * [추가된 부분 2] 로그인 성공 시 토큰과 닉네임을 기기에 저장하는 함수
  * (Login.tsx에서 로그인 API 성공 직후 호출해야 함)
  */
-export const setAuthData = async (token: string, nickname: string, userId: number) => {
+export const setAuthData = async (
+  token: string,
+  nickname: string,
+  userId: number,
+  loginId?: string,
+) => {
   try {
     authToken = token;
     currentNickname = nickname;
     currentUserId = userId;
+    currentLoginId = loginId ?? null;
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(NICKNAME_KEY, nickname);
     await SecureStore.setItemAsync(USER_ID_KEY, String(userId));
+    if (loginId) {
+      await SecureStore.setItemAsync(LOGIN_ID_KEY, loginId);
+    }
+    await hydrateFavorites(userId);
   } catch (error) {
     console.error('토큰 저장 실패:', error);
   }
@@ -101,9 +121,12 @@ export const clearAuthData = async () => {
     authToken = null;
     currentNickname = '';
     currentUserId = null;
+    currentLoginId = null;
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(NICKNAME_KEY);
     await SecureStore.deleteItemAsync(USER_ID_KEY);
+    await SecureStore.deleteItemAsync(LOGIN_ID_KEY);
+    await hydrateFavorites(null);
   } catch (error) {
     console.error('토큰 삭제 실패:', error);
   }
@@ -192,6 +215,43 @@ async function requestApiData<T>(config: {
   const response = await request<ApiResponse<T>>(config);
   return response.data;
 }
+
+// 사용자 프로필(user-service /auth/user/**)
+// 이 서비스만 ApiResponse 래퍼 없이 DTO를 그대로 반환하는 부분(getUser)이 있어 분기 처리한다.
+export const userApi = {
+  // /auth/user/{userId} 응답이 래핑되지 않은 DTO이므로 request<>를 그대로 사용
+  getByLoginId: (loginId: string) =>
+    request<UserProfile>({
+      url: `/auth/user/${encodeURIComponent(loginId)}`,
+      method: 'GET',
+    }),
+
+  removeProfileImage: (loginId: string) =>
+    request<UserProfile>({
+      url: `/auth/user/${encodeURIComponent(loginId)}/profile-image`,
+      method: 'DELETE',
+    }),
+
+  async uploadProfileImage(loginId: string, imageUri: string): Promise<UserProfile> {
+    const filename = imageUri.split('/').pop() || 'profile.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+
+    const formData = new FormData();
+    formData.append('image', { uri: imageUri, name: filename, type } as any);
+
+    try {
+      const response = await apiClient.patch<UserProfile>(
+        `/auth/user/${encodeURIComponent(loginId)}/profile-image`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(toErrorMessage(error));
+    }
+  },
+};
 
 export const authApi = {
   async login(userId: string, password: string) {
@@ -303,6 +363,12 @@ export const sensorApi = {
       url: `/api/sensor/data/${plantId}/history?hours=${hours}`,
       method: 'GET',
     }),
+  // 최근 1시간 raw 데이터 (Sparkline 분 단위 차트용)
+  getRecent: (plantId: number) =>
+    request<SensorData[]>({
+      url: `/api/sensor/data/${plantId}/recent`,
+      method: 'GET',
+    }),
 
   // 미연결 디바이스 목록 (ESP32 자동 등록 후 link 안 된 것들)
   getUnlinkedDevices: () =>
@@ -344,6 +410,13 @@ export const sensorApi = {
     request<void>({
       url: `/api/sensor/device/${encodeURIComponent(deviceId)}/unlink`,
       method: 'PATCH',
+    }),
+
+  // 수동 물주기 요청 - ESP32가 다음 폴링에서 픽업해 펌프 작동 (최대 약 5초 지연)
+  requestPump: (plantId: number) =>
+    request<void>({
+      url: `/api/sensor/plant/${plantId}/pump`,
+      method: 'POST',
     }),
 };
 
@@ -409,6 +482,27 @@ export const growthLogApi = {
     request<boolean>({
       url: `/growth-log/${logId}`,
       method: 'DELETE',
+    }),
+};
+
+// 🔔 알림 API — sensor-service의 /api/sensor/notifications/** 라우트
+export const notificationApi = {
+  getByUser: (userId: string) =>
+    request<NotificationItem[]>({
+      url: `/api/sensor/notifications?userId=${encodeURIComponent(userId)}`,
+      method: 'GET',
+    }),
+
+  markRead: (notificationId: number) =>
+    request<void>({
+      url: `/api/sensor/notifications/${notificationId}/read`,
+      method: 'PATCH',
+    }),
+
+  markAllRead: (userId: string) =>
+    request<void>({
+      url: `/api/sensor/notifications/read-all?userId=${encodeURIComponent(userId)}`,
+      method: 'PATCH',
     }),
 };
 
@@ -492,6 +586,9 @@ export interface CreateMyPlantDto {
   location?: string;
 }
 
+// 백엔드 DeviceStatus enum 대응
+export type DeviceStatus = 'ONLINE' | 'OFFLINE' | 'DISABLED';
+
 // 백엔드 SensorDeviceDto 대응 (sensor-service)
 export interface SensorDeviceInfo {
   deviceId: string;
@@ -502,6 +599,9 @@ export interface SensorDeviceInfo {
   threshold?: number;
   duration?: number;
   speciesCode?: number;
+  pumpRequested?: boolean;
+  status?: DeviceStatus;       // 통합 상태 (백엔드에서 계산)
+  lastSeenAt?: string;         // 마지막 센서 데이터 수신 시각
   createdAt?: string;
   updatedAt?: string;
 }
@@ -527,6 +627,15 @@ export interface DiagnosisResult {
   result: string;
   imageUrl: string;
   diagnosisDate: string;
+}
+
+// 백엔드 UserResponseDto 대응 (user-service /auth/user/**)
+export interface UserProfile {
+  id: number;
+  userId: string;
+  email: string;
+  nickname: string;
+  profileImageUrl?: string;
 }
 
 export interface PlantBookItem {
@@ -581,6 +690,18 @@ export interface CreateGrowthLogDto {
   content: string;
   type?: string;
   logDate?: string;
+}
+
+// 백엔드 NotificationDto 대응 (sensor-service)
+export interface NotificationItem {
+  notificationId: number;
+  plantId: number;
+  plantNickname?: string;
+  type: 'WATER_LOW' | 'DEVICE_INACTIVE' | string;
+  title?: string;
+  message?: string;
+  isRead: boolean;
+  createdAt?: string;
 }
 
 // 백엔드 WeatherWidgetResponse 대응 (plant-service)

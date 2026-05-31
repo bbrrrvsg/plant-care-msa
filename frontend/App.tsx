@@ -102,7 +102,7 @@ function MainTabNavigator() {
     >
       <Tab.Screen name="Home" component={Home} options={{ title: '홈' }} />
       <Tab.Screen name="Encyclopedia" component={PlantEncyclopedia} options={{ title: '식물도감' }} />
-      <Tab.Screen name="AIDiagnosis" component={AIDiagnosis} options={{ title: 'AI진단' }} />
+      <Tab.Screen name="AIDiagnosis" component={AIDiagnosis} options={{ title: 'AI 카메라' }} />
       <Tab.Screen name="Diary" component={GrowthDiary} options={{ title: '일지' }} />
     </Tab.Navigator>
   );

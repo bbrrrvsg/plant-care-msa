@@ -14,7 +14,7 @@ import java.util.UUID;
 @Service
 public class GrowthLogImageService {
 
-    @Value("${file.upload-dir:src/main/static/images}")
+    @Value("${file.upload-dir:./uploads/plant-images}")
     private String uploadDir;
 
     @PostConstruct

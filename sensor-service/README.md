@@ -1,5 +1,23 @@
 # Sensor Service
 
+## ESP32 펌웨어
+
+- 위치: `embedded/ESP32/ESP32.ino`
+- 권장 외부 터널: Gateway를 `ngrok http 8080`으로 노출합니다.
+- ngrok이 발급한 HTTPS 주소를 `ESP32.ino`의 `BASE_URL`에 입력합니다.
+- 필수 Arduino 라이브러리: `ArduinoJson`
+
+실행 흐름:
+
+1. ESP32가 WiFiManager로 Wi-Fi에 연결합니다.
+2. ESP32가 MAC 주소 기반 `deviceId`를 `POST /api/sensor/device/register`로 등록합니다.
+3. ESP32가 `GET /api/sensor/device/{deviceId}`로 `threshold`, `duration`을 조회합니다.
+4. ESP32가 DHT22, BH1750, 토양수분 센서값을 측정합니다.
+5. `soilMoisture < threshold`이면 ESP32가 펌프를 `duration` ms 동안 로컬에서 작동합니다.
+6. ESP32가 `POST /api/sensor/data`로 `temperature`, `humidity`, `illuminance`, `soilMoisture`를 전송합니다.
+
+---
+
 ## 개요
 ESP32 센서 기기 등록 및 실시간 센서 데이터 수신을 담당하는 서비스
 

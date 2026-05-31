@@ -16,6 +16,7 @@ import java.io.IOException;
 import com.sppkl.common.dto.AIDiagnosisDto;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/plant")
@@ -86,6 +87,16 @@ public class PlantController {
             @PathVariable Integer myPlantId,
             @RequestBody PlantRequestDto dto) {
         return ResponseEntity.ok(plantService.updateMyPlant(myPlantId, dto));
+    }
+
+    // 센서 기기 연결/해제 동기화 (sensor-service가 내부적으로 호출)
+    // body: { "deviceId": "AA:BB:..." } 또는 { "deviceId": null }
+    @PatchMapping("/{myPlantId}/device")
+    public ResponseEntity<Void> updateDevice(
+            @PathVariable Integer myPlantId,
+            @RequestBody Map<String, String> body) {
+        plantService.updateDeviceId(myPlantId, body.get("deviceId"));
+        return ResponseEntity.noContent().build();
     }
 
     // 식물 떠나보내기 (소프트 삭제 → 추억 보관함)

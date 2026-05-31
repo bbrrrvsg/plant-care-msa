@@ -1,4 +1,4 @@
-package com.sppkl.plant.config;
+package com.sppkl.user.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(StaticResourceConfig.class);
 
-    @Value("${file.upload-dir:./uploads/plant-images}")
+    @Value("${file.upload-dir:./uploads/profile-images}")
     private String uploadDir;
 
     @Override
@@ -26,14 +26,13 @@ public class StaticResourceConfig implements WebMvcConfigurer {
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
-            log.warn("업로드 디렉토리 생성 실패: {}", dir, e);
+            log.warn("프로필 이미지 디렉토리 생성 실패: {}", dir, e);
         }
-        // file:///C:/Users/.../uploads/  — 디렉토리 매핑이므로 반드시 '/'로 끝나야 함
         String location = dir.toUri().toString();
         if (!location.endsWith("/")) location += "/";
 
-        log.info("정적 리소스 매핑 /images/** -> {}", location);
-        registry.addResourceHandler("/images/**")
+        log.info("정적 리소스 매핑 /profile-images/** -> {}", location);
+        registry.addResourceHandler("/profile-images/**")
                 .addResourceLocations(location);
     }
 }

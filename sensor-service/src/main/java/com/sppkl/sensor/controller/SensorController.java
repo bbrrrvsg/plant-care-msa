@@ -89,11 +89,31 @@ public class SensorController {
         return ResponseEntity.ok(data);
     }
 
-    // 식물의 시간별 평균 데이터 조회 (대시보드 차트용)
+    // 식물의 시간별 평균 데이터 조회 (대시보드 차트용 — 장기 추세)
     @GetMapping("/data/{plantId}/history")
     public ResponseEntity<List<SensorDataDto>> getHistory(
             @PathVariable Integer plantId,
             @RequestParam(defaultValue = "10") int hours) {
         return ResponseEntity.ok(sensorDataService.getHistory(plantId, hours));
+    }
+
+    // 최근 1시간 raw 데이터 조회 (대시보드 sparkline용 — 분 단위 변화 표시)
+    @GetMapping("/data/{plantId}/recent")
+    public ResponseEntity<List<SensorDataDto>> getRecent(@PathVariable Integer plantId) {
+        return ResponseEntity.ok(sensorDataService.getRecentRawData(plantId));
+    }
+
+    // 앱에서 수동 물주기 요청 (식물 기준)
+    @PostMapping("/plant/{plantId}/pump")
+    public ResponseEntity<?> requestPump(@PathVariable Integer plantId) {
+        sensorDeviceService.requestPump(plantId);
+        return ResponseEntity.ok().build();
+    }
+
+    // ESP32가 펌프 작동 후 ack (deviceId 기준)
+    @PostMapping("/device/{deviceId}/pump/ack")
+    public ResponseEntity<?> acknowledgePump(@PathVariable String deviceId) {
+        sensorDeviceService.acknowledgePump(deviceId);
+        return ResponseEntity.ok().build();
     }
 }

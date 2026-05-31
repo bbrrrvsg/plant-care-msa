@@ -12,6 +12,9 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @Service
 @Transactional
@@ -22,6 +25,8 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    private ProfileImageService profileImageService;
 
     //회원가입
     public void signUp(SignUpRequestDto signUpRequestDto) {
@@ -64,11 +69,34 @@ public class UserService {
     public UserResponseDto getUser(String userId) {
         UserInfo user = userInfoRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("유저 없음"));
+        return toDto(user);
+    }
+
+    public UserResponseDto updateProfileImage(String userId, MultipartFile image) throws IOException {
+        UserInfo user = userInfoRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("유저 없음"));
+        String url = profileImageService.save(image);
+        user.setProfileImageUrl(url);
+        userInfoRepository.save(user);
+        return toDto(user);
+    }
+
+    public UserResponseDto removeProfileImage(String userId) {
+        UserInfo user = userInfoRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("유저 없음"));
+        profileImageService.delete(user.getProfileImageUrl());
+        user.setProfileImageUrl(null);
+        userInfoRepository.save(user);
+        return toDto(user);
+    }
+
+    private UserResponseDto toDto(UserInfo user) {
         return UserResponseDto.builder()
                 .id(user.getId())
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
     }
 } //class end

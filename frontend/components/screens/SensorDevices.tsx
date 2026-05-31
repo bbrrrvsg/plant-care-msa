@@ -14,9 +14,11 @@ import {
   sensorApi,
   plantApi,
   getUserId,
+  DeviceStatus,
   SensorDeviceInfo,
   MyPlantItem,
 } from '../../services/api';
+import { getStatusVisual } from '../../lib/sensorState';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -27,6 +29,12 @@ function formatDate(iso?: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '-';
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 백엔드 status 필드가 우선, 누락 시 active 플래그로 폴백
+function resolveStatus(device: SensorDeviceInfo): DeviceStatus {
+  if (device.status) return device.status;
+  return device.active === false ? 'DISABLED' : 'ONLINE';
 }
 
 export function SensorDevices() {
@@ -125,21 +133,20 @@ export function SensorDevices() {
           {devices.map((d) => {
             const isExp = expanded === d.deviceId;
             const isConf = confirmId === d.deviceId;
-            const isOnline = !!d.active;
+            const status = resolveStatus(d);
+            const visual = getStatusVisual(status);
             const plant = d.plantId != null ? plantMap.get(d.plantId) : null;
             const displayName = d.deviceName || d.deviceId;
             return (
               <View key={d.deviceId} style={[s.card, isExp && s.cardExp]}>
                 <TouchableOpacity style={s.cardHeader} onPress={() => toggle(d.deviceId)} activeOpacity={0.7}>
                   <View style={s.headerLeft}>
-                    <View style={[s.statusDot, { backgroundColor: isOnline ? '#10B981' : '#D1D5DB' }]} />
+                    <View style={[s.statusDot, { backgroundColor: visual.dot }]} />
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text style={s.nickname}>{displayName}</Text>
-                        <View style={isOnline ? s.onlineBadge : s.offlineBadge}>
-                          <Text style={isOnline ? s.onlineBadgeText : s.offlineBadgeText}>
-                            {isOnline ? '온라인' : '오프라인'}
-                          </Text>
+                        <View style={[s.statusBadge, { backgroundColor: visual.bg }]}>
+                          <Text style={[s.statusBadgeText, { color: visual.text }]}>{visual.badge}</Text>
                         </View>
                       </View>
                       <Text style={s.mac}>{d.deviceId}</Text>
@@ -163,9 +170,9 @@ export function SensorDevices() {
                         </Text>
                       </View>
                       <View style={s.statBox}>
-                        <Power size={16} color={isOnline ? '#10B981' : '#9CA3AF'} />
+                        <Power size={16} color={visual.dot} />
                         <Text style={s.statLabel}>상태</Text>
-                        <Text style={s.statValue}>{isOnline ? '활성' : '비활성'}</Text>
+                        <Text style={s.statValue}>{visual.badge}</Text>
                       </View>
                     </View>
                     <View style={s.infoList}>
@@ -181,8 +188,8 @@ export function SensorDevices() {
                         <Text style={s.infoValue}>{formatDate(d.createdAt)}</Text>
                       </View>
                       <View style={s.infoRow}>
-                        <Text style={s.infoLabel}>최종 업데이트</Text>
-                        <Text style={s.infoValue}>{formatDate(d.updatedAt)}</Text>
+                        <Text style={s.infoLabel}>마지막 데이터</Text>
+                        <Text style={s.infoValue}>{formatDate(d.lastSeenAt) !== '-' ? formatDate(d.lastSeenAt) : formatDate(d.updatedAt)}</Text>
                       </View>
                     </View>
                     {isConf ? (
@@ -249,10 +256,8 @@ const s = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   nickname: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  onlineBadge: { backgroundColor: '#D1FAE5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  onlineBadgeText: { fontSize: 10, fontWeight: '600', color: '#059669' },
-  offlineBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  offlineBadgeText: { fontSize: 10, fontWeight: '600', color: '#6B7280' },
+  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  statusBadgeText: { fontSize: 10, fontWeight: '600' },
   mac: { fontSize: 12, color: '#9CA3AF', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   expandedContent: { paddingHorizontal: 16, paddingBottom: 16 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 4 },
