@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @NoArgsConstructor@AllArgsConstructor@Data@Builder
 @Entity@Table(name = "plant")
-public class PlantEntity extends BaseTime{
+public class PlantEntity extends BaseTime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

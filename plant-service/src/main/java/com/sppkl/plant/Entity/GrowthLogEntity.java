@@ -1,6 +1,5 @@
 package com.sppkl.plant.Entity;
 
-import com.sppkl.plant.Entity.BaseTime;
 import com.sppkl.common.dto.GrowthLogDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
