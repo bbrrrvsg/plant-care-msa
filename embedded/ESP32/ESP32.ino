@@ -420,11 +420,11 @@ void loop() {
     if (illuminance < 0)    illuminance = 0.0;
 
     // 자동 급수: 임계값 미만이고, 가동 중 아니고, 쿨다운 아닐 때만
-    if (soilPercent < threshold) {
-      char reason[64];
-      snprintf(reason, sizeof(reason), "soil=%d%% < threshold=%d%%", soilPercent, threshold);
-      startPump(duration, reason, false);  // force=false -> 쿨다운 적용
-    }
+    // if (soilPercent < threshold) {
+    //   char reason[64];
+    //   snprintf(reason, sizeof(reason), "soil=%d%% < threshold=%d%%", soilPercent, threshold);
+    //  startPump(duration, reason, false);  // force=false -> 쿨다운 적용
+    // }
 
     sendData(temperature, humidity, illuminance, soilPercent);
   }
