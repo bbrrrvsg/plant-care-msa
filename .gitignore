@@ -1,0 +1,72 @@
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+.kotlin
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+### Claude Code ###
+.claude/worktrees/
+.claude/settings.local.json
+.claude/settings.json
+
+### Spring application secret override (필요 시 개인 환경 오버라이드용) ###
+# application.properties는 팀 공유 설정으로 추적함.
+# 시크릿/개인 환경별 값은 환경변수(${VAR:default}) 또는 application-secret.properties 로 오버라이드.
+**/application-secret.properties
+
+### Frontend (React Native / Expo) ###
+frontend/node_modules/
+frontend/.expo/
+frontend/.env
+frontend/.env.local
+frontend/expo.out.log
+frontend/expo.err.log
+frontend/web-build/
+frontend/dist/
+
+plant-care-msa.code-workspace
+
+### 업로드 파일 (이미지 등) ###
+# 새 표준 경로 — 모든 서비스의 file.upload-dir 기본값
+uploads/
+**/uploads/
+
+# 과거 잘못된 작업 디렉토리로 인해 생기던 위치 (호환 차단)
+src/main/static/
+**/src/main/static/images/
+**/src/main/static/profile-images/
