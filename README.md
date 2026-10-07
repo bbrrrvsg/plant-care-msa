@@ -197,7 +197,7 @@ ESP32 ─POST /api/sensor/data─→ sensor-service
 앱 ─POST /ai/gemini (image, plantId)─→ ai-service
                                           │
                                           ├─ plant-service에서 센서 데이터 조회 (Feign)
-                                          ├─ Gemini 2.5 Flash: 이미지 + 센서 데이터 함께 프롬프트
+                                          ├─ Gemini 3.5 Flash: 이미지 + 센서 데이터 함께 프롬프트
                                           ├─ 제목 / 소제목 / 내용 파싱
                                           └─ ai_diagnosis 테이블 저장 후 DTO 반환
 ```
